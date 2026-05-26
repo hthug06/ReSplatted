@@ -1,0 +1,9 @@
+[package]
+name = "resplatted-protocol"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+tokio.workspace = true
+bytes.workspace = true

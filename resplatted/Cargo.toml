@@ -1,0 +1,13 @@
+[package]
+name = "resplatted"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+resplatted-protocol.workspace = true
+clap = { version = "4", features = ["derive"] }
+
+# Log
+log.workspace = true
+simplelog.workspace = true
