@@ -2,7 +2,7 @@ use crate::packet::PacketWrite;
 use bytes::{BufMut, BytesMut};
 
 pub struct SKeepAlive {
-    pub id: i64
+    pub id: i64,
 }
 
 impl PacketWrite for SKeepAlive {

@@ -1,10 +1,14 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
+use log::warn;
 use resplatted_protocol::io::read::MinecraftReadExt;
 use resplatted_protocol::packet::PacketRead;
 use resplatted_protocol::packet::configuration::c_disconnect::ConfigurationDisconnectPacket;
+use resplatted_protocol::packet::configuration::c_keep_alive::CKeepAlive;
 use resplatted_protocol::packet::configuration::c_plugin_message::PluginMessagePacket;
 use resplatted_protocol::packet::configuration::client_information::ClientInformationPacket;
+use resplatted_protocol::packet::configuration::s_keep_alive::SKeepAlive;
+use resplatted_protocol::packet::configuration::s_known_pack::KnownPackPacket;
 use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
@@ -45,15 +49,30 @@ impl MinecraftClient {
                         ),
                     ));
                 }
+                0x04 => {
+                    let packet = CKeepAlive::read(&mut Cursor::new(&raw_packet.payload))?;
+                    self.writer
+                        .write_and_send_packet(&SKeepAlive { id: packet.id })
+                        .await?;
+                }
+                0x0E => {
+                    log::info!("Received Select Know Pack packet. Replying with Know Pack Packet");
+                    // Need to answer the pack we already have on the disk (none)
+                    self.writer.write_and_send_packet(&KnownPackPacket).await?;
+                }
                 // Error on the network or unimplemented packet
                 _ => {
-                    return Err(Error::new(
+                    /*return Err(Error::new(
                         ErrorKind::InvalidData,
                         format!(
                             "Packet ID unknown in the configuration phase: 0x{:02X}",
                             raw_packet.id
                         ),
-                    ));
+                    ));*/
+                    warn!(
+                        "Packet ID unknown in the configuration phase: 0x{:02X}",
+                        raw_packet.id
+                    );
                 }
             }
         }
