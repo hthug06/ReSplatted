@@ -4,7 +4,7 @@ use crate::client::state::ProtocolState;
 use clap::Parser;
 use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 mod cli;
 mod client;
@@ -50,14 +50,15 @@ async fn main() -> Result<(), Error> {
             .await?;
 
         // Then login
-        match client.login("ReSplatted").await {
+        let next_state = match client.login("ReSplatted").await {
             Ok(next_state) => {
                 info!("Login state completed, next state is : {:?}", next_state);
+                next_state
             }
             Err(e) => {
-                log::error!("Stopping client : {}", e);
+                return Err(Error::new(ErrorKind::InvalidData, format!("Login failed: {}", e)));
             }
-        }
+        };
     }
 
     info!("Disconnecting from {}...", address);
