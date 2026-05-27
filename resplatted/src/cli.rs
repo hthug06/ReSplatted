@@ -7,4 +7,10 @@ pub struct Args {
     /// Adress of the target
     #[arg(long)]
     pub address: String,
+
+    #[arg(long, short, default_value = "25565")]
+    pub port: u16,
+
+    #[arg(long, short, default_value_t = false)]
+    pub status: bool,
 }

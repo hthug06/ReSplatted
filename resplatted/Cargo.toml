@@ -11,3 +11,14 @@ clap = { version = "4", features = ["derive"] }
 # Log
 log.workspace = true
 simplelog.workspace = true
+
+#tokio
+tokio.workspace = true
+
+bytes.workspace = true
+
+#serde
+serde_json = "1.0.150"
+
+# base 64 used for the favicon
+base64 = "0.22.1"

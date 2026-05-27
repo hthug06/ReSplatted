@@ -10,6 +10,9 @@ pub trait MinecraftReadExt {
     /// Read an u16.
     /// Same as i16, but without the & 65536
     fn read_u16(&mut self) -> std::io::Result<u16>;
+
+    /// Read an i64 (long)
+    fn read_i64(&mut self) -> std::io::Result<i64>;
 }
 
 /// Implement the MinecraftReadExt trait for any type that implements std::io::Read
@@ -62,6 +65,12 @@ impl<R: Read> MinecraftReadExt for R {
         let mut buf = [0u8; 2];
         self.read_exact(&mut buf)?;
         Ok(u16::from_be_bytes(buf))
+    }
+
+    fn read_i64(&mut self) -> std::io::Result<i64> {
+        let mut buf = [0u8; 8];
+        self.read_exact(&mut buf)?;
+        Ok(i64::from_be_bytes(buf))
     }
 }
 

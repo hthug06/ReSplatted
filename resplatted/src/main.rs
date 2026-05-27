@@ -1,11 +1,16 @@
 use crate::cli::Args;
+use crate::client::core::MinecraftClient;
+use crate::client::state::ProtocolState;
 use clap::Parser;
 use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
+use std::io::Error;
 
 mod cli;
+mod client;
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     // First of all init log
     // Start log
     TermLogger::init(
@@ -20,4 +25,28 @@ fn main() {
 
     let args = Args::parse();
     info!("{:?}", args);
+
+    // Configure target
+    let target_ip = &args.address;
+    let port = args.port;
+    let address = format!("{}:{}", target_ip, port);
+    info!("Connecting to {}...", address);
+
+    // Init the tcp connection
+    let mut client = MinecraftClient::connect(&address).await?;
+
+    if args.status {
+        // Status state
+        client
+            .handshake(target_ip, port, ProtocolState::Status)
+            .await?;
+
+        // fetch the status from the server
+        client.fetch_and_display_status(target_ip).await?;
+    } else {
+        info!("Login not implemented");
+    }
+
+    info!("Disconnecting from {}...", address);
+    Ok(())
 }

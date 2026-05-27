@@ -2,8 +2,13 @@ pub mod handshake;
 pub mod status;
 
 use crate::io::write::MinecraftWriteExt;
-use bytes::{BufMut, BytesMut};
+use bytes::BytesMut;
 use std::io::Cursor;
+
+pub struct RawPacket {
+    pub id: i32,
+    pub payload: Vec<u8>,
+}
 
 /// Trait for reading the packet.
 /// Server -> Client
@@ -21,21 +26,15 @@ pub trait PacketWrite {
     fn write(&self, buf: &mut BytesMut) -> std::io::Result<()>;
 }
 
-/// Encode a packet into a buffer. This will write the ID, the data and the size of the packet
-/// Not in the PacketWrite because after, the compression and encryption can be passed in argument
+/// Encode a packet into a BytesMut Buffer (ID + DATA)
 pub fn encode_packet<P: PacketWrite>(packet: &P) -> std::io::Result<BytesMut> {
-    let mut payload = BytesMut::new();
+    let mut payload = BytesMut::with_capacity(128);
 
-    // First the ID
+    // ID
     payload.write_var_int(P::ID);
 
-    // Then the data
+    // Then DATA
     packet.write(&mut payload)?;
 
-    // Finally wrap it
-    let mut final_packet = BytesMut::new();
-    final_packet.write_var_int(payload.len() as i32);
-    final_packet.put_slice(&payload);
-
-    Ok(final_packet)
+    Ok(payload)
 }
