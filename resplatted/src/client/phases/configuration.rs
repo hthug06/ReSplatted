@@ -6,7 +6,8 @@ use resplatted_protocol::packet::PacketRead;
 use resplatted_protocol::packet::configuration::c_disconnect::ConfigurationDisconnectPacket;
 use resplatted_protocol::packet::configuration::c_keep_alive::CKeepAlive;
 use resplatted_protocol::packet::configuration::c_plugin_message::PluginMessagePacket;
-use resplatted_protocol::packet::configuration::client_information::ClientInformationPacket;
+use resplatted_protocol::packet::configuration::s_client_information::ClientInformationPacket;
+use resplatted_protocol::packet::configuration::s_finish_configuration::FinishConfigurationPacket;
 use resplatted_protocol::packet::configuration::s_keep_alive::SKeepAlive;
 use resplatted_protocol::packet::configuration::s_known_pack::KnownPackPacket;
 use std::io::{Cursor, Error, ErrorKind};
@@ -48,6 +49,17 @@ impl MinecraftClient {
                             packet.reason
                         ),
                     ));
+                }
+                0x03 => {
+                    log::info!(
+                        "Received Finish Configuration packet. Replying with Acknowledge Finish Configuration Packet"
+                    );
+                    // Need to answer the pack we already have on the disk (none)
+                    self.writer
+                        .write_and_send_packet(&FinishConfigurationPacket)
+                        .await?;
+
+                    return Ok(ProtocolState::Play);
                 }
                 0x04 => {
                     let packet = CKeepAlive::read(&mut Cursor::new(&raw_packet.payload))?;
