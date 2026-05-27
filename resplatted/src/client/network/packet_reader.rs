@@ -20,7 +20,16 @@ impl PacketReader {
         // Cipher activate : decrypt
 
         // Read size
-        let length = self.read_async_var_int().await? as usize;
+        let length = self.read_async_var_int().await?;
+
+        // Avoid zip bomb or malformed packet
+        if length < 0 || length > 8_388_608 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Packet length out of bounds: {}", length),
+            ));
+        }
+        let length = length as usize;
 
         // Put all the packet in a buffer
         let mut raw_buffer = vec![0u8; length];

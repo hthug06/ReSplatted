@@ -50,7 +50,7 @@ impl MinecraftClient {
         };
 
         let handshake = HandshakePacket {
-            protocol_version: 775, // 1.20.1
+            protocol_version: 775, // 26.1.2
             server_address: target_ip.to_string(),
             server_port: port,
             next_state: state_int,
