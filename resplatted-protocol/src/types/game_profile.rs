@@ -34,7 +34,21 @@ impl GameProfile {
         // After that, the properties (skins, textures...)
         // This is a Prefixed Array, the prefix is the size
         let property_count = reader.read_var_int()?;
-        let mut properties = Vec::with_capacity(property_count as usize);
+
+        // 16 should be more than okay because 99% of the time their just 'textures'
+        // + texture is for premium server, so in cracked server there is no properties 99% of the time
+        if !(0..=16).contains(&property_count) {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "Nombre de propriétés GameProfile invalide : {}",
+                    property_count
+                ),
+            ));
+        }
+
+        let mut properties: Vec<GameProfileProperties> =
+            Vec::with_capacity(property_count as usize);
 
         for _ in 0..property_count {
             let prop_name = reader.read_string()?;

@@ -39,7 +39,7 @@ impl MinecraftClient {
                 0x01 => {
                     return Err(Error::new(
                         ErrorKind::PermissionDenied,
-                        "Server in Online mode.",
+                        "Server is in Online mode.",
                     ));
                 }
                 // Login Success Packet$
