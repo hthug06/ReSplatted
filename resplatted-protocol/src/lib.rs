@@ -1,3 +1,3 @@
 pub mod io;
 pub mod packet;
-mod types;
+pub mod types;

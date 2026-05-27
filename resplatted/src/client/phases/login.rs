@@ -43,7 +43,7 @@ impl MinecraftClient {
                     ));
                 }
                 // Login Success Packet$
-                // Sent when the login phases is done.
+                // Sent when the login phase is done.
                 // We need to send the login acknowledged packet in return
                 0x02 => {
                     let packet = LoginSuccessPacket::read(&mut Cursor::new(&raw_packet.payload))?;
@@ -67,7 +67,7 @@ impl MinecraftClient {
                     return Err(Error::new(
                         ErrorKind::InvalidData,
                         format!(
-                            "Packet ID unknow in the login phase: 0x{:02X}",
+                            "Packet ID unknown  in the login phase: 0x{:02X}",
                             raw_packet.id
                         ),
                     ));

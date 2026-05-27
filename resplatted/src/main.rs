@@ -50,7 +50,7 @@ async fn main() -> Result<(), Error> {
             .await?;
 
         // Then login
-        let next_state = match client.login("ReSplatted").await {
+        let _next_state = match client.login("ReSplatted").await {
             Ok(next_state) => {
                 info!("Login state completed, next state is : {:?}", next_state);
                 next_state

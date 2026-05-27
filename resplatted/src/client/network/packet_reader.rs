@@ -23,7 +23,7 @@ impl PacketReader {
         let length = self.read_async_var_int().await?;
 
         // Avoid zip bomb or malformed packet
-        if length < 0 || length > 8_388_608 {
+        if !(0..=8_388_608).contains(&length) {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 format!("Packet length out of bounds: {}", length),
