@@ -44,9 +44,23 @@ async fn main() -> Result<(), Error> {
         // fetch the status from the server
         client.fetch_and_display_status(target_ip).await?;
     } else {
-        info!("Login not implemented");
+        // First handshake
+        client
+            .handshake(target_ip, port, ProtocolState::Login)
+            .await?;
+
+        // Then login
+        match client.login("ReSplatted").await {
+            Ok(next_state) => {
+                info!("Login state completed, next state is : {:?}", next_state);
+            }
+            Err(e) => {
+                log::error!("Stopping client : {}", e);
+            }
+        }
     }
 
     info!("Disconnecting from {}...", address);
+    info!("Stopping ReSplatted");
     Ok(())
 }

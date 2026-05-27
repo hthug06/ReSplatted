@@ -1,10 +1,12 @@
 pub mod handshake;
+pub mod login;
 pub mod status;
 
 use crate::io::write::MinecraftWriteExt;
 use bytes::BytesMut;
 use std::io::Cursor;
 
+#[derive(Debug)]
 pub struct RawPacket {
     pub id: i32,
     pub payload: Vec<u8>,

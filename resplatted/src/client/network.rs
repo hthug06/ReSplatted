@@ -84,7 +84,10 @@ pub struct PacketWriter {
 
 impl PacketWriter {
     /// Send a packet (with encryption and compression if needed)
-    pub async fn write_packet<P: PacketWrite>(&mut self, packet: &P) -> std::io::Result<()> {
+    pub async fn write_and_send_packet<P: PacketWrite>(
+        &mut self,
+        packet: &P,
+    ) -> std::io::Result<()> {
         // get ID + DATA
         let raw_payload = encode_packet(packet)?;
 

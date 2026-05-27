@@ -1,4 +1,3 @@
-use super::core::MinecraftClient;
 use base64::Engine;
 use std::fs::File;
 use std::io::Cursor;
@@ -6,11 +5,13 @@ use std::io::Write;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::client::core::MinecraftClient;
 use resplatted_protocol::packet::PacketRead;
 use resplatted_protocol::packet::status::{
     c_pong_response::PongResponsePacket, c_status_response::StatusResponsePacket,
     s_ping_request::PingRequestPacket, s_status_request::StatusRequestPacket,
 };
+
 /// Because favicon use § with a char for color, we need to skip them
 fn clean_motd(motd: &str) -> String {
     let mut cleaned = String::new();
@@ -57,7 +58,7 @@ impl MinecraftClient {
     pub async fn fetch_and_display_status(&mut self, target_ip: &str) -> std::io::Result<()> {
         // Send status request
         let status_request = StatusRequestPacket;
-        self.writer.write_packet(&status_request).await?;
+        self.writer.write_and_send_packet(&status_request).await?;
 
         // Get the json
         let raw_packet = self.reader.read_packet().await?;
@@ -77,7 +78,14 @@ impl MinecraftClient {
                     .get("name")
                     .and_then(|v| v.as_str())
                     .unwrap_or("Unknown");
-                println!("📌 Version : {}", name);
+
+                let protocol = version
+                    .get("protocol")
+                    .and_then(|v| v.as_i64())
+                    .map(|p| p.to_string())
+                    .unwrap_or("Unknown".to_string());
+
+                println!("📌 Version : {} (Protocol version : {})", name, protocol);
             }
 
             if let Some(players) = parsed.get("players") {
@@ -113,7 +121,7 @@ impl MinecraftClient {
             .unwrap()
             .as_millis() as i64;
         self.writer
-            .write_packet(&PingRequestPacket {
+            .write_and_send_packet(&PingRequestPacket {
                 timestamp: ping_payload,
             })
             .await?;

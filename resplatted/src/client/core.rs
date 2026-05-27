@@ -45,13 +45,13 @@ impl MinecraftClient {
         };
 
         let handshake = HandshakePacket {
-            protocol_version: 763, // 1.20.1
+            protocol_version: 775, // 1.20.1
             server_address: target_ip.to_string(),
             server_port: port,
             next_state: state_int,
         };
 
-        self.writer.write_packet(&handshake).await?;
+        self.writer.write_and_send_packet(&handshake).await?;
 
         // Update the state
         self.state = next_state;
