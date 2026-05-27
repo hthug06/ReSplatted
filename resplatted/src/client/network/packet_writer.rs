@@ -76,7 +76,7 @@ pub fn compress_payload(
             data_buffer.write_var_int(uncompressed_length as i32);
 
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-            let _ = encoder.write_all(raw_payload);
+            encoder.write_all(raw_payload)?;
             let compressed_payload = encoder.finish()?;
 
             data_buffer.put_slice(&compressed_payload);

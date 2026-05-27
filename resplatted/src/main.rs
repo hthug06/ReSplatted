@@ -56,7 +56,10 @@ async fn main() -> Result<(), Error> {
                 next_state
             }
             Err(e) => {
-                return Err(Error::new(ErrorKind::InvalidData, format!("Login failed: {}", e)));
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Login failed: {}", e),
+                ));
             }
         };
     }
