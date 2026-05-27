@@ -1,4 +1,5 @@
-use crate::client::network::{PacketReader, PacketWriter};
+use crate::client::network::packet_reader::PacketReader;
+use crate::client::network::packet_writer::PacketWriter;
 use crate::client::state::ProtocolState;
 use resplatted_protocol::packet::handshake::{HandshakeNextState, HandshakePacket};
 use tokio::io::BufReader;
@@ -19,8 +20,12 @@ impl MinecraftClient {
         Ok(Self {
             reader: PacketReader {
                 stream: BufReader::new(read_half),
+                compression_threshold: None,
             },
-            writer: PacketWriter { stream: write_half },
+            writer: PacketWriter {
+                stream: write_half,
+                compression_threshold: None,
+            },
             state: ProtocolState::Handshake,
         })
     }
