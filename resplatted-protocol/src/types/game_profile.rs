@@ -1,0 +1,88 @@
+use crate::io::read::MinecraftReadExt;
+use crate::io::write::MinecraftWriteExt;
+use bytes::{BufMut, BytesMut};
+use std::io::{Error, Read};
+use uuid::Uuid;
+
+/// A game profile with infos of the player
+/// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Game_Profile
+#[derive(Debug)]
+pub struct GameProfile {
+    pub uuid: Uuid,
+    pub username: String,
+    pub properties: Vec<GameProfileProperties>,
+}
+
+#[derive(Debug)]
+pub struct GameProfileProperties {
+    pub name: String,
+    pub value: String,
+    pub signature: Option<String>,
+}
+
+impl GameProfile {
+    /// Read a GameProfile from flux
+    pub fn read<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        // first the Uuid
+        let mut uuid_bytes = [0u8; 16];
+        reader.read_exact(&mut uuid_bytes)?;
+        let uuid = Uuid::from_bytes(uuid_bytes);
+
+        // Then the username
+        let username = reader.read_string()?;
+
+        // After that, the properties (skins, textures...)
+        // This is a Prefixed Array, the prefix is the size
+        let property_count = reader.read_var_int()?;
+        let mut properties = Vec::with_capacity(property_count as usize);
+
+        for _ in 0..property_count {
+            let prop_name = reader.read_string()?;
+            let prop_value = reader.read_string()?;
+
+            // read 'is signed'
+            let mut is_signed_buf = [0u8; 1];
+            reader.read_exact(&mut is_signed_buf)?;
+            let is_signed = is_signed_buf[0] != 0;
+
+            let signature = if is_signed {
+                Some(reader.read_string()?)
+            } else {
+                None
+            };
+
+            properties.push(GameProfileProperties {
+                name: prop_name,
+                value: prop_value,
+                signature,
+            });
+        }
+
+        Ok(Self {
+            uuid,
+            username,
+            properties,
+        })
+    }
+
+    /// Encode un GameProfile dans un buffer sortant
+    /// Write a gameprofile into a buffer
+    pub fn write(&self, buf: &mut BytesMut) -> Result<(), Error> {
+        buf.put_slice(self.uuid.as_bytes());
+        buf.write_string(&self.username)?;
+
+        buf.write_var_int(self.properties.len() as i32);
+        for prop in &self.properties {
+            buf.write_string(&prop.name)?;
+            buf.write_string(&prop.value)?;
+
+            if let Some(sig) = &prop.signature {
+                buf.put_u8(1); // is_signed = true
+                buf.write_string(sig)?;
+            } else {
+                buf.put_u8(0); // is_signed = false
+            }
+        }
+        Ok(())
+    }
+}

@@ -2,9 +2,10 @@ use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
 use log::info;
 use resplatted_protocol::packet::PacketRead;
-use resplatted_protocol::packet::login::c_disconnect::LoginDisconnectPacket;
-use resplatted_protocol::packet::login::c_set_compression::SetCompressionPacket;
-use resplatted_protocol::packet::login::s_login_start::LoginStartPacket;
+use resplatted_protocol::packet::login::{
+    c_disconnect::LoginDisconnectPacket, c_login_success::LoginSuccessPacket,
+    c_set_compression::SetCompressionPacket, s_login_start::LoginStartPacket,
+};
 use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
@@ -39,6 +40,11 @@ impl MinecraftClient {
                         ErrorKind::PermissionDenied,
                         "Server in Online mode.",
                     ));
+                }
+                0x02 => {
+                    let packet = LoginSuccessPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    info!("Received Game Profile: {:?}", packet);
+                    return Ok(ProtocolState::Play);
                 }
                 // Compression packet
                 0x03 => {
