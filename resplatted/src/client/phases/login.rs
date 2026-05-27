@@ -31,6 +31,15 @@ impl MinecraftClient {
                         format!("Disconnected by server: {}", packet.reason),
                     ));
                 }
+                // Encryption request packet
+                // It's sent when the server is in online mode.
+                // This is a bot, not a premium account so we just stop the program
+                0x01 => {
+                    return Err(Error::new(
+                        ErrorKind::PermissionDenied,
+                        "Server in Online mode.",
+                    ));
+                }
                 // Compression packet
                 0x03 => {
                     let packet = SetCompressionPacket::read(&mut Cursor::new(&raw_packet.payload))?;
