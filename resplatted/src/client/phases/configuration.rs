@@ -1,7 +1,9 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
+use resplatted_protocol::io::read::MinecraftReadExt;
 use resplatted_protocol::packet::PacketRead;
 use resplatted_protocol::packet::configuration::c_disconnect::ConfigurationDisconnectPacket;
+use resplatted_protocol::packet::configuration::c_plugin_message::PluginMessagePacket;
 use resplatted_protocol::packet::configuration::client_information::ClientInformationPacket;
 use std::io::{Cursor, Error, ErrorKind};
 
@@ -20,6 +22,17 @@ impl MinecraftClient {
 
             // Match the packet id to know what packet we need to handle
             match raw_packet.id {
+                // Custom payload, not very interesting
+                0x01 => {
+                    let packet = PluginMessagePacket::read(&mut Cursor::new(&raw_packet.payload))?;
+
+                    if packet.channel == "minecraft:brand" {
+                        let mut cursor = Cursor::new(&packet.data);
+                        if let Ok(brand) = cursor.read_string() {
+                            log::info!("Server brand is: {}", brand);
+                        }
+                    }
+                }
                 // Disconnect Packet
                 0x02 => {
                     let packet =
