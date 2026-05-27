@@ -4,7 +4,7 @@ use crate::client::state::ProtocolState;
 use clap::Parser;
 use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 mod cli;
 mod client;
@@ -44,9 +44,27 @@ async fn main() -> Result<(), Error> {
         // fetch the status from the server
         client.fetch_and_display_status(target_ip).await?;
     } else {
-        info!("Login not implemented");
+        // First handshake
+        client
+            .handshake(target_ip, port, ProtocolState::Login)
+            .await?;
+
+        // Then login
+        let _next_state = match client.login("ReSplatted").await {
+            Ok(next_state) => {
+                info!("Login state completed, next state is : {:?}", next_state);
+                next_state
+            }
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Login failed: {}", e),
+                ));
+            }
+        };
     }
 
     info!("Disconnecting from {}...", address);
+    info!("Stopping ReSplatted");
     Ok(())
 }
