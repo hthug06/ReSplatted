@@ -30,7 +30,7 @@ impl MinecraftClient {
                         LoginDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     return Err(Error::new(
                         ErrorKind::ConnectionAborted,
-                        format!("Disconnected by server: {}", packet.reason),
+                        format!("Disconnected by server in logging phase: {}", packet.reason),
                     ));
                 }
                 // Encryption request packet
