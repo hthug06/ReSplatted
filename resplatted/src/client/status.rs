@@ -97,7 +97,7 @@ impl MinecraftClient {
             if let Some(favicon) = parsed.get("favicon") {
                 let base64_str = favicon.as_str().unwrap_or("");
                 if let Ok(path) = save_favicon(base64_str, target_ip) {
-                    println!("🖼️  Favicon : Save in {}", path);
+                    println!("🖼️  Favicon : Saved in {}", path);
                 } else {
                     println!(
                         "🖼️  Favicon : Server don't have favicon, or favicon is already in the folder temp/"
