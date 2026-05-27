@@ -2,6 +2,7 @@ use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
 use log::info;
 use resplatted_protocol::packet::PacketRead;
+use resplatted_protocol::packet::login::s_login_acknowledged::LoginAcknowledgedPacket;
 use resplatted_protocol::packet::login::{
     c_disconnect::LoginDisconnectPacket, c_login_success::LoginSuccessPacket,
     c_set_compression::SetCompressionPacket, s_login_start::LoginStartPacket,
@@ -41,10 +42,18 @@ impl MinecraftClient {
                         "Server in Online mode.",
                     ));
                 }
+                // Login Success Packet$
+                // Sent when the login phases is done.
+                // We need to send the login acknowledged packet in return
                 0x02 => {
                     let packet = LoginSuccessPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     info!("Received Game Profile: {:?}", packet);
-                    return Ok(ProtocolState::Play);
+
+                    self.writer
+                        .write_and_send_packet(&LoginAcknowledgedPacket)
+                        .await?;
+
+                    return Ok(ProtocolState::Configuration);
                 }
                 // Compression packet
                 0x03 => {
