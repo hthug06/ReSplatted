@@ -4,6 +4,7 @@ use clap::Parser;
 use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::io::Error;
+use std::sync::Arc;
 
 mod cli;
 mod client;
@@ -13,7 +14,7 @@ async fn main() -> Result<(), Error> {
     // First of all init log
     // Start log
     TermLogger::init(
-        LevelFilter::Info,
+        LevelFilter::Info, // Use LevelFilter::Debug for debugging (LOL)
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -26,57 +27,85 @@ async fn main() -> Result<(), Error> {
     info!("{:?}", args);
 
     // Configure target
-    let target_ip = &args.address;
+    let target = Arc::new(args.address);
     let port = args.port;
-    let address = format!("{}:{}", target_ip, port);
-    info!("Connecting to {}...", address);
-
-    // Init the tcp connection
-    let mut client = MinecraftClient::connect(&address).await?;
+    info!("Connecting to {}:{}...", target, port);
 
     if args.status {
+        // Create a new client and Init the tcp connection
+        let mut client = MinecraftClient::connect(&target, port).await?;
+
         // Status state
         client
-            .handshake(target_ip, port, ProtocolState::Status)
+            .handshake(&target, port, ProtocolState::Status)
             .await?;
 
         // fetch the status from the server
-        client.fetch_and_display_status(target_ip).await?;
+        client.fetch_and_display_status(&target).await?;
     } else {
-        // First handshake
-        client
-            .handshake(target_ip, port, ProtocolState::Login)
-            .await?;
+        // All the bots task
+        let mut bot_tasks = Vec::new();
 
-        // Then login
-        match client.login("ReSplatted").await {
-            Ok(state) => {
-                info!("Login state completed, next state is : {:?}", state);
-                state
-            }
-            Err(e) => {
-                log::error!("Login failed: {}", e);
-                return Ok(());
-            }
-        };
+        for i in 1..=args.bot_number {
+            // Set the name here, used one in function but more simple for logs
+            let bot_name = format!("ReSplatted_{}", i);
+            let target_ptr = Arc::clone(&target);
 
-        match client.configuration().await {
-            Ok(final_state) => {
-                info!(
-                    "Configuration state completed, next state is : {:?}",
-                    final_state
-                );
-            }
-            Err(e) => {
-                log::error!("Configuration failed: {}", e);
-                return Ok(());
-            }
-        };
+            // Start a new background task,
+            // This task is an entire bot
+            let handle = tokio::spawn(async move {
+                // info!("Démarrage du bot {}", bot_name);
 
-        client.enter_game().await?;
+                let mut client = match MinecraftClient::connect(&target_ptr, port).await {
+                    Ok(c) => c,
+                    Err(e) => {
+                        log::error!("[{}] Failed to connect: {}", bot_name, e);
+                        return; // Stop the background task
+                    }
+                };
+
+                // Handshake
+                if let Err(e) = client
+                    .handshake(&target_ptr, port, ProtocolState::Login)
+                    .await
+                {
+                    log::error!("[{}] Failed Handshake: {}", bot_name, e);
+                    return;
+                }
+
+                // Login
+                if let Err(e) = client.login(&bot_name).await {
+                    log::error!("[{}] Failed Login: {}", bot_name, e);
+                    return;
+                }
+
+                // Configuration
+                match client.configuration().await {
+                    Ok(_) => info!("[{}] Connected !", bot_name),
+                    Err(e) => {
+                        log::error!("[{}] Failed Configuration: {}", bot_name, e);
+                        return;
+                    }
+                };
+
+                // Play | Game loop
+                if let Err(e) = client.enter_game().await {
+                    log::error!("[{}] Disconnected: {}", bot_name, e);
+                }
+            });
+
+            // Add the task to the vec
+            bot_tasks.push(handle);
+        }
+
+        // Wait here for the bot
+        // The program stop when every bot disconnected
+        for task in bot_tasks {
+            let _ = task.await;
+        }
     }
 
-    info!("Disconnecting from {}...", address);
+    info!("Disconnecting from {}:{}...", target, port);
     info!("Stopping ReSplatted");
     Ok(())
 }

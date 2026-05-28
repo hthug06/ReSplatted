@@ -1,5 +1,5 @@
 use crate::client::{core::MinecraftClient, state::ProtocolState};
-use log::warn;
+use log::{debug, warn};
 use resplatted_protocol::{
     io::read::MinecraftReadExt,
     packet::{
@@ -38,7 +38,7 @@ impl MinecraftClient {
                     if packet.channel == "minecraft:brand" {
                         let mut cursor = Cursor::new(&packet.data);
                         if let Ok(brand) = cursor.read_string() {
-                            log::info!("Server brand is: {}", brand);
+                            debug!("Server brand is: {}", brand);
                         }
                     }
                 }
@@ -55,7 +55,7 @@ impl MinecraftClient {
                     ));
                 }
                 CFinishConfigurationPacket::ID => {
-                    log::info!(
+                    debug!(
                         "Received Finish Configuration packet. Replying with Acknowledge Finish Configuration Packet"
                     );
                     // Need to answer the pack we already have on the disk (none)
@@ -73,7 +73,7 @@ impl MinecraftClient {
                         .await?;
                 }
                 CKnownPackPacket::ID => {
-                    log::info!("Received Select Know Pack packet. Replying with Know Pack Packet");
+                    debug!("Received Select Know Pack packet. Replying with Know Pack Packet");
                     // Need to answer the pack we already have on the disk (none)
                     self.writer.write_and_send_packet(&SKnownPackPacket).await?;
                 }
@@ -88,7 +88,7 @@ impl MinecraftClient {
                             raw_packet.id
                         ),
                     ));*/
-                    warn!(
+                    debug!(
                         "Packet ID unknown in the configuration phase: 0x{:02X}",
                         raw_packet.id
                     );

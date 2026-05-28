@@ -1,6 +1,6 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
-use log::info;
+use log::{debug, info};
 use resplatted_protocol::packet::{
     PacketRead,
     login::{
@@ -49,7 +49,7 @@ impl MinecraftClient {
                 // We need to send the login acknowledged packet in return
                 LoginSuccessPacket::ID => {
                     let packet = LoginSuccessPacket::read(&mut Cursor::new(&raw_packet.payload))?;
-                    info!("Received Game Profile: {:?}", packet);
+                    debug!("Received Game Profile: {:?}", packet);
 
                     self.writer
                         .write_and_send_packet(&LoginAcknowledgedPacket)
@@ -62,7 +62,7 @@ impl MinecraftClient {
                     let packet = SetCompressionPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     self.reader.compression_threshold = Some(packet.threshold);
                     self.writer.compression_threshold = Some(packet.threshold);
-                    info!("Compression enabled with threshold: {}", packet.threshold);
+                    debug!("Compression enabled with threshold: {}", packet.threshold);
                 }
                 // Error on the network or unimplemented packet
                 _ => {

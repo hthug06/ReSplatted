@@ -14,8 +14,8 @@ pub struct MinecraftClient {
 
 impl MinecraftClient {
     /// Create the TCP Connexion
-    pub async fn connect(address: &str) -> std::io::Result<Self> {
-        let stream = TcpStream::connect(address).await?;
+    pub async fn connect(target: &str, port: u16) -> std::io::Result<Self> {
+        let stream = TcpStream::connect(format!("{}:{}", target, port)).await?;
         let (read_half, write_half) = stream.into_split();
 
         Ok(Self {

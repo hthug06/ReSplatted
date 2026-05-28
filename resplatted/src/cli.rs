@@ -8,9 +8,12 @@ pub struct Args {
     #[arg(long)]
     pub address: String,
 
-    #[arg(long, short, default_value = "25565")]
+    #[arg(long, short, default_value_t = 25565)]
     pub port: u16,
 
     #[arg(long, short, default_value_t = false)]
     pub status: bool,
+
+    #[arg(long, short, default_value_t = 1)]
+    pub bot_number: u32,
 }

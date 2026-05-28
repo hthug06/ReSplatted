@@ -1,5 +1,5 @@
 use crate::client::core::MinecraftClient;
-use log::{info, warn};
+use log::{debug, info, warn};
 use resplatted_protocol::packet::{
     PacketRead,
     play::{
@@ -22,7 +22,7 @@ impl MinecraftClient {
             match raw_packet.id {
                 CPlayKeepAlivePacket::ID => {
                     let packet = CPlayKeepAlivePacket::read(&mut Cursor::new(&raw_packet.payload))?;
-                    info!(
+                    debug!(
                         "Received Keep Alive packet with id: {}. Sending Keep Alive packet with the same id",
                         packet.id
                     );
@@ -40,7 +40,7 @@ impl MinecraftClient {
                 }
                 SyncPlayerPos::ID => {
                     let packet = SyncPlayerPos::read(&mut Cursor::new(&raw_packet.payload))?;
-                    info!(
+                    debug!(
                         "Received Sync Player Pos packet with teleport id: {}. Sending Accept Teleportation packet",
                         packet.teleport_id
                     );
@@ -74,7 +74,7 @@ impl MinecraftClient {
                             raw_packet.id
                         ),
                     ));*/
-                    warn!(
+                    debug!(
                         "Packet ID unknown in the play phase: 0x{:02X}",
                         raw_packet.id
                     );
