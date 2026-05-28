@@ -1,5 +1,4 @@
 use crate::client::core::MinecraftClient;
-use crate::client::state::ProtocolState;
 use log::{info, warn};
 use resplatted_protocol::packet::{
     PacketRead,
@@ -13,7 +12,7 @@ use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
-    pub async fn enter_game(&mut self) -> std::io::Result<ProtocolState> {
+    pub async fn enter_game(&mut self) -> std::io::Result<()> {
         // read loop
         loop {
             // read the raw packet
@@ -71,7 +70,7 @@ impl MinecraftClient {
                     /*return Err(Error::new(
                         ErrorKind::InvalidData,
                         format!(
-                            "Packet ID unknown in the configuration phase: 0x{:02X}",
+                            "Packet ID unknown in the play phase: 0x{:02X}",
                             raw_packet.id
                         ),
                     ));*/
