@@ -7,7 +7,7 @@ pub struct CPlayKeepAlivePacket {
 }
 
 impl PacketRead for CPlayKeepAlivePacket {
-    const ID: i32 = 0x02B;
+    const ID: i32 = 0x2C;
 
     fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         Ok(Self {

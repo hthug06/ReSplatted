@@ -6,7 +6,7 @@ pub struct SPlayKeepAlivePacket {
 }
 
 impl PacketWrite for SPlayKeepAlivePacket {
-    const ID: i32 = 0x1B;
+    const ID: i32 = 0x1C;
 
     fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
         buf.put_i64(self.id);
