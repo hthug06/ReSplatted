@@ -1,6 +1,6 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
-use log::{debug, info};
+use log::debug;
 use resplatted_protocol::packet::{
     PacketRead,
     login::{

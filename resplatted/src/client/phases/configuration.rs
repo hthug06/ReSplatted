@@ -1,5 +1,5 @@
 use crate::client::{core::MinecraftClient, state::ProtocolState};
-use log::{debug, warn};
+use log::debug;
 use resplatted_protocol::{
     io::read::MinecraftReadExt,
     packet::{

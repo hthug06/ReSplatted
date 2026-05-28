@@ -5,6 +5,7 @@ use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::io::Error;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 mod cli;
 mod client;
@@ -45,11 +46,17 @@ async fn main() -> Result<(), Error> {
     } else {
         // All the bots task
         let mut bot_tasks = Vec::new();
+        // For logs
+        let connected_count = Arc::new(AtomicUsize::new(0));
+        let total_bots = args.bot_number;
 
         for i in 1..=args.bot_number {
             // Set the name here, used one in function but more simple for logs
             let bot_name = format!("ReSplatted_{}", i);
             let target_ptr = Arc::clone(&target);
+
+            // For log
+            let count_ptr = Arc::clone(&connected_count);
 
             // Start a new background task,
             // This task is an entire bot
@@ -81,7 +88,11 @@ async fn main() -> Result<(), Error> {
 
                 // Configuration
                 match client.configuration().await {
-                    Ok(_) => info!("[{}] Connected !", bot_name),
+                    Ok(_) => {
+                        let current = count_ptr.fetch_add(1, Ordering::Relaxed) + 1;
+
+                        info!("[{}] Connected ! {}/{}", bot_name, current, total_bots);
+                    }
                     Err(e) => {
                         log::error!("[{}] Failed Configuration: {}", bot_name, e);
                         return;
