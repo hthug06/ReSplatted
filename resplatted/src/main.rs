@@ -101,7 +101,15 @@ async fn main() -> Result<(), Error> {
 
                 // Play | Game loop
                 if let Err(e) = client.enter_game().await {
-                    log::error!("[{}] Disconnected: {}", bot_name, e);
+                    let current = count_ptr.fetch_sub(1, Ordering::SeqCst) - 1;
+
+                    log::error!(
+                        "[{}] Disconnected: {}. {}/{}",
+                        bot_name,
+                        e,
+                        current,
+                        total_bots
+                    );
                 }
             });
 
