@@ -1,8 +1,9 @@
 use bytes::{BufMut, BytesMut};
-use flate2::Compression;
-use flate2::write::ZlibEncoder;
-use resplatted_protocol::io::write::MinecraftWriteExt;
-use resplatted_protocol::packet::{PacketWrite, encode_packet};
+use flate2::{Compression, write::ZlibEncoder};
+use resplatted_protocol::{
+    io::write::MinecraftWriteExt,
+    packet::{PacketWrite, encode_packet},
+};
 use std::io::{ErrorKind, Write};
 use tokio::io::AsyncWriteExt;
 use tokio::net::tcp::OwnedWriteHalf;

@@ -1,6 +1,5 @@
 use flate2::bufread::ZlibDecoder;
-use resplatted_protocol::io::read::MinecraftReadExt;
-use resplatted_protocol::packet::RawPacket;
+use resplatted_protocol::{io::read::MinecraftReadExt, packet::RawPacket};
 use std::io::{Cursor, Read};
 use tokio::io::{AsyncReadExt, BufReader};
 use tokio::net::tcp::OwnedReadHalf;

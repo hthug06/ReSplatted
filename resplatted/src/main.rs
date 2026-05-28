@@ -1,6 +1,5 @@
 use crate::cli::Args;
-use crate::client::core::MinecraftClient;
-use crate::client::state::ProtocolState;
+use crate::client::{core::MinecraftClient, state::ProtocolState};
 use clap::Parser;
 use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};

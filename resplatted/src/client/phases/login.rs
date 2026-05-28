@@ -1,11 +1,13 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
 use log::info;
-use resplatted_protocol::packet::PacketRead;
-use resplatted_protocol::packet::login::s_login_acknowledged::LoginAcknowledgedPacket;
-use resplatted_protocol::packet::login::{
-    c_disconnect::LoginDisconnectPacket, c_login_success::LoginSuccessPacket,
-    c_set_compression::SetCompressionPacket, s_login_start::LoginStartPacket,
+use resplatted_protocol::packet::{
+    PacketRead,
+    login::{
+        c_disconnect::LoginDisconnectPacket, c_encryption_request::EncryptionRequestPacket,
+        c_login_success::LoginSuccessPacket, c_set_compression::SetCompressionPacket,
+        s_login_acknowledged::LoginAcknowledgedPacket, s_login_start::LoginStartPacket,
+    },
 };
 use std::io::{Cursor, Error, ErrorKind};
 
@@ -25,7 +27,7 @@ impl MinecraftClient {
             // Match the packet id to know what packet we need to handle
             match raw_packet.id {
                 // Disconnect packet
-                0x00 => {
+                LoginDisconnectPacket::ID => {
                     let packet =
                         LoginDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     return Err(Error::new(
@@ -36,7 +38,7 @@ impl MinecraftClient {
                 // Encryption request packet
                 // It's sent when the server is in online mode.
                 // This is a bot, not a premium account so we just stop the program
-                0x01 => {
+                EncryptionRequestPacket::ID => {
                     return Err(Error::new(
                         ErrorKind::PermissionDenied,
                         "Server is in Online mode.",
@@ -45,7 +47,7 @@ impl MinecraftClient {
                 // Login Success Packet$
                 // Sent when the login phase is done.
                 // We need to send the login acknowledged packet in return
-                0x02 => {
+                LoginSuccessPacket::ID => {
                     let packet = LoginSuccessPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     info!("Received Game Profile: {:?}", packet);
 
@@ -56,7 +58,7 @@ impl MinecraftClient {
                     return Ok(ProtocolState::Configuration);
                 }
                 // Compression packet
-                0x03 => {
+                SetCompressionPacket::ID => {
                     let packet = SetCompressionPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     self.reader.compression_threshold = Some(packet.threshold);
                     self.writer.compression_threshold = Some(packet.threshold);

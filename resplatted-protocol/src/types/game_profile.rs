@@ -1,5 +1,4 @@
-use crate::io::read::MinecraftReadExt;
-use crate::io::write::MinecraftWriteExt;
+use crate::io::{read::MinecraftReadExt, write::MinecraftWriteExt};
 use bytes::{BufMut, BytesMut};
 use std::io::{Error, Read};
 use uuid::Uuid;

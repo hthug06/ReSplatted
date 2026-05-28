@@ -1,6 +1,7 @@
-use crate::client::network::packet_reader::PacketReader;
-use crate::client::network::packet_writer::PacketWriter;
-use crate::client::state::ProtocolState;
+use crate::client::{
+    network::{packet_reader::PacketReader, packet_writer::PacketWriter},
+    state::ProtocolState,
+};
 use resplatted_protocol::packet::handshake::{HandshakeNextState, HandshakePacket};
 use tokio::io::BufReader;
 use tokio::net::TcpStream;

@@ -3,9 +3,9 @@ use crate::packet::PacketWrite;
 use bytes::BytesMut;
 
 /// For this packet, we're just going to send a varint with 0 to say: 'I don't know any pack'
-pub struct KnownPackPacket;
+pub struct SKnownPackPacket;
 
-impl PacketWrite for KnownPackPacket {
+impl PacketWrite for SKnownPackPacket {
     const ID: i32 = 0x07;
 
     fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {

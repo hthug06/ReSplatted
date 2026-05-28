@@ -1,15 +1,19 @@
-use crate::client::core::MinecraftClient;
-use crate::client::state::ProtocolState;
+use crate::client::{core::MinecraftClient, state::ProtocolState};
 use log::warn;
-use resplatted_protocol::io::read::MinecraftReadExt;
-use resplatted_protocol::packet::PacketRead;
-use resplatted_protocol::packet::configuration::c_disconnect::ConfigurationDisconnectPacket;
-use resplatted_protocol::packet::configuration::c_keep_alive::CKeepAlive;
-use resplatted_protocol::packet::configuration::c_plugin_message::PluginMessagePacket;
-use resplatted_protocol::packet::configuration::s_client_information::ClientInformationPacket;
-use resplatted_protocol::packet::configuration::s_finish_configuration::FinishConfigurationPacket;
-use resplatted_protocol::packet::configuration::s_keep_alive::SKeepAlive;
-use resplatted_protocol::packet::configuration::s_known_pack::KnownPackPacket;
+use resplatted_protocol::{
+    io::read::MinecraftReadExt,
+    packet::{
+        PacketRead,
+        configuration::{
+            c_disconnect::ConfigurationDisconnectPacket,
+            c_finish_configuration::CFinishConfigurationPacket, c_keep_alive::CKeepAlive,
+            c_know_pack::CKnownPackPacket, c_plugin_message::PluginMessagePacket,
+            s_client_information::ClientInformationPacket,
+            s_finish_configuration::SFinishConfigurationPacket, s_keep_alive::SKeepAlive,
+            s_known_pack::SKnownPackPacket,
+        },
+    },
+};
 use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
@@ -28,7 +32,7 @@ impl MinecraftClient {
             // Match the packet id to know what packet we need to handle
             match raw_packet.id {
                 // Custom payload, not very interesting
-                0x01 => {
+                PluginMessagePacket::ID => {
                     let packet = PluginMessagePacket::read(&mut Cursor::new(&raw_packet.payload))?;
 
                     if packet.channel == "minecraft:brand" {
@@ -39,7 +43,7 @@ impl MinecraftClient {
                     }
                 }
                 // Disconnect Packet
-                0x02 => {
+                ConfigurationDisconnectPacket::ID => {
                     let packet =
                         ConfigurationDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     return Err(Error::new(
@@ -50,27 +54,27 @@ impl MinecraftClient {
                         ),
                     ));
                 }
-                0x03 => {
+                CFinishConfigurationPacket::ID => {
                     log::info!(
                         "Received Finish Configuration packet. Replying with Acknowledge Finish Configuration Packet"
                     );
                     // Need to answer the pack we already have on the disk (none)
                     self.writer
-                        .write_and_send_packet(&FinishConfigurationPacket)
+                        .write_and_send_packet(&SFinishConfigurationPacket)
                         .await?;
 
                     return Ok(ProtocolState::Play);
                 }
-                0x04 => {
+                CKeepAlive::ID => {
                     let packet = CKeepAlive::read(&mut Cursor::new(&raw_packet.payload))?;
                     self.writer
                         .write_and_send_packet(&SKeepAlive { id: packet.id })
                         .await?;
                 }
-                0x0E => {
+                CKnownPackPacket::ID => {
                     log::info!("Received Select Know Pack packet. Replying with Know Pack Packet");
                     // Need to answer the pack we already have on the disk (none)
-                    self.writer.write_and_send_packet(&KnownPackPacket).await?;
+                    self.writer.write_and_send_packet(&SKnownPackPacket).await?;
                 }
                 // Error on the network or unimplemented packet
                 _ => {

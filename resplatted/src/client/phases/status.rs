@@ -1,15 +1,18 @@
 use base64::Engine;
-use std::fs::File;
-use std::io::Cursor;
-use std::io::Write;
-use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fs::File,
+    io::{Cursor, Write},
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::client::core::MinecraftClient;
-use resplatted_protocol::packet::PacketRead;
-use resplatted_protocol::packet::status::{
-    c_pong_response::PongResponsePacket, c_status_response::StatusResponsePacket,
-    s_ping_request::PingRequestPacket, s_status_request::StatusRequestPacket,
+use resplatted_protocol::packet::{
+    PacketRead,
+    status::{
+        c_pong_response::PongResponsePacket, c_status_response::StatusResponsePacket,
+        s_ping_request::PingRequestPacket, s_status_request::StatusRequestPacket,
+    },
 };
 
 /// Because favicon use § with a char for color, we need to skip them
@@ -62,7 +65,7 @@ impl MinecraftClient {
 
         // Get the json
         let raw_packet = self.reader.read_packet().await?;
-        if raw_packet.id == 0x00 {
+        if raw_packet.id == StatusResponsePacket::ID {
             let mut cursor = Cursor::new(raw_packet.payload.as_slice());
             let response = StatusResponsePacket::read(&mut cursor)?;
 
@@ -127,7 +130,7 @@ impl MinecraftClient {
             .await?;
 
         let raw_pong = self.reader.read_packet().await?;
-        if raw_pong.id == 0x01 {
+        if raw_pong.id == PongResponsePacket::ID {
             let mut cursor = Cursor::new(raw_pong.payload.as_slice());
             let pong = PongResponsePacket::read(&mut cursor)?;
             let current_time = SystemTime::now()
