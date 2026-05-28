@@ -70,6 +70,7 @@ async fn main() -> Result<(), Error> {
             }
             Err(e) => {
                 log::error!("Configuration failed: {}", e);
+                return Ok(());
             }
         };
     }
