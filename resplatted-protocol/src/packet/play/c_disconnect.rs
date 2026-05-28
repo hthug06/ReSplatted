@@ -2,16 +2,16 @@ use crate::io::read::MinecraftReadExt;
 use crate::packet::PacketRead;
 use std::io::Cursor;
 
-pub struct CConfigurationKeepAlivePacket {
-    pub id: i64,
+pub struct PlayDisconnectPacket {
+    pub reason: String,
 }
 
-impl PacketRead for CConfigurationKeepAlivePacket {
-    const ID: i32 = 0x04;
+impl PacketRead for PlayDisconnectPacket {
+    const ID: i32 = 0x20;
 
     fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         Ok(Self {
-            id: cursor.read_i64()?,
+            reason: cursor.read_string()?,
         })
     }
 }

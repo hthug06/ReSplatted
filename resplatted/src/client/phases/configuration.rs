@@ -6,11 +6,11 @@ use resplatted_protocol::{
         PacketRead,
         configuration::{
             c_disconnect::ConfigurationDisconnectPacket,
-            c_finish_configuration::CFinishConfigurationPacket, c_keep_alive::CKeepAlive,
-            c_know_pack::CKnownPackPacket, c_plugin_message::PluginMessagePacket,
-            s_client_information::ClientInformationPacket,
-            s_finish_configuration::SFinishConfigurationPacket, s_keep_alive::SKeepAlive,
-            s_known_pack::SKnownPackPacket,
+            c_finish_configuration::CFinishConfigurationPacket,
+            c_keep_alive::CConfigurationKeepAlivePacket, c_know_pack::CKnownPackPacket,
+            c_plugin_message::PluginMessagePacket, s_client_information::ClientInformationPacket,
+            s_finish_configuration::SFinishConfigurationPacket,
+            s_keep_alive::SConfigurationKeepAlivePacket, s_known_pack::SKnownPackPacket,
         },
     },
 };
@@ -65,10 +65,11 @@ impl MinecraftClient {
 
                     return Ok(ProtocolState::Play);
                 }
-                CKeepAlive::ID => {
-                    let packet = CKeepAlive::read(&mut Cursor::new(&raw_packet.payload))?;
+                CConfigurationKeepAlivePacket::ID => {
+                    let packet =
+                        CConfigurationKeepAlivePacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     self.writer
-                        .write_and_send_packet(&SKeepAlive { id: packet.id })
+                        .write_and_send_packet(&SConfigurationKeepAlivePacket { id: packet.id })
                         .await?;
                 }
                 CKnownPackPacket::ID => {

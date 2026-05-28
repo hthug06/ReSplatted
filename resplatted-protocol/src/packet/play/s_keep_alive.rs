@@ -1,12 +1,12 @@
 use crate::packet::PacketWrite;
 use bytes::{BufMut, BytesMut};
 
-pub struct SConfigurationKeepAlivePacket {
+pub struct SPlayKeepAlivePacket {
     pub id: i64,
 }
 
-impl PacketWrite for SConfigurationKeepAlivePacket {
-    const ID: i32 = 0x04;
+impl PacketWrite for SPlayKeepAlivePacket {
+    const ID: i32 = 0x1C;
 
     fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
         buf.put_i64(self.id);
