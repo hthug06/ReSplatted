@@ -3,7 +3,12 @@ use crate::client::state::ProtocolState;
 use log::{info, warn};
 use resplatted_protocol::packet::PacketRead;
 use resplatted_protocol::packet::play::c_disconnect::PlayDisconnectPacket;
+use resplatted_protocol::packet::play::c_sync_player_pos::SyncPlayerPos;
+use resplatted_protocol::packet::play::s_accept_teleportation::AcceptTeleportationPacket;
+use resplatted_protocol::packet::play::s_move_player_pos_rot::MovePlayerPosRotPacket;
 use std::io::{Cursor, Error, ErrorKind};
+use resplatted_protocol::packet::play::c_keep_alive::CPlayKeepAlivePacket;
+use resplatted_protocol::packet::play::s_keep_alive::SPlayKeepAlivePacket;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
@@ -15,6 +20,14 @@ impl MinecraftClient {
 
             // Match the packet id to know what packet we need to handle
             match raw_packet.id {
+                CPlayKeepAlivePacket::ID => {
+                    let packet = CPlayKeepAlivePacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    info!(
+                        "Received Keep Alive packet with id: {}. Sending Keep Alive packet with the same id",
+                        packet.id
+                    );
+                    self.writer.write_and_send_packet(&SPlayKeepAlivePacket { id: packet.id }).await?;
+                }
                 // Disconnect packet
                 PlayDisconnectPacket::ID => {
                     let packet = PlayDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
@@ -23,6 +36,27 @@ impl MinecraftClient {
                         format!("Disconnected by server in play phase: {}", packet.reason),
                     ));
                 }
+                SyncPlayerPos::ID => {
+                    let packet = SyncPlayerPos::read(&mut Cursor::new(&raw_packet.payload))?;
+                    info!(
+                        "Received Sync Player Pos packet with teleport id: {}. Sending Accept Teleportation packet",
+                        packet.teleport_id
+                    );
+
+                    self.writer.write_and_send_packet(&AcceptTeleportationPacket { teleport_id: packet.teleport_id }).await?;
+
+                    self.writer
+                        .write_and_send_packet(&MovePlayerPosRotPacket {
+                            x: packet.x,
+                            feet_y: packet.y - 1.62,
+                            z: packet.z,
+                            yaw: packet.yaw,
+                            pitch: packet.pitch,
+                            flags: 0x01,
+                        })
+                        .await?;
+                }
+
                 // Error on the network or unimplemented packet
                 _ => {
                     // If we want, we can stop the program here on an unimplemented packet.
