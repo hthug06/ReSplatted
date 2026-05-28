@@ -30,7 +30,7 @@ impl MinecraftClient {
                         LoginDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     return Err(Error::new(
                         ErrorKind::ConnectionAborted,
-                        format!("Disconnected by server in logging phase: {}", packet.reason),
+                        format!("Disconnected by server in login phase: {}", packet.reason),
                     ));
                 }
                 // Encryption request packet
@@ -67,7 +67,7 @@ impl MinecraftClient {
                     return Err(Error::new(
                         ErrorKind::InvalidData,
                         format!(
-                            "Packet ID unknown  in the login phase: 0x{:02X}",
+                            "Packet ID unknown in the login phase: 0x{:02X}",
                             raw_packet.id
                         ),
                     ));
