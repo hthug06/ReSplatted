@@ -1,5 +1,5 @@
-use bytes::BytesMut;
 use crate::packet::PacketWrite;
+use bytes::BytesMut;
 
 /// This packet is sent when the loading screen has closed
 pub struct PlayerLoadedPacket;

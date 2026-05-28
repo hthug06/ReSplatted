@@ -1,14 +1,15 @@
 use crate::client::core::MinecraftClient;
 use crate::client::state::ProtocolState;
 use log::{info, warn};
-use resplatted_protocol::packet::PacketRead;
-use resplatted_protocol::packet::play::c_disconnect::PlayDisconnectPacket;
-use resplatted_protocol::packet::play::c_sync_player_pos::SyncPlayerPos;
-use resplatted_protocol::packet::play::s_accept_teleportation::AcceptTeleportationPacket;
-use resplatted_protocol::packet::play::s_move_player_pos_rot::MovePlayerPosRotPacket;
+use resplatted_protocol::packet::{
+    PacketRead,
+    play::{
+        c_disconnect::PlayDisconnectPacket, c_keep_alive::CPlayKeepAlivePacket,
+        c_sync_player_pos::SyncPlayerPos, s_accept_teleportation::AcceptTeleportationPacket,
+        s_keep_alive::SPlayKeepAlivePacket, s_move_player_pos_rot::MovePlayerPosRotPacket,
+    },
+};
 use std::io::{Cursor, Error, ErrorKind};
-use resplatted_protocol::packet::play::c_keep_alive::CPlayKeepAlivePacket;
-use resplatted_protocol::packet::play::s_keep_alive::SPlayKeepAlivePacket;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
@@ -26,7 +27,9 @@ impl MinecraftClient {
                         "Received Keep Alive packet with id: {}. Sending Keep Alive packet with the same id",
                         packet.id
                     );
-                    self.writer.write_and_send_packet(&SPlayKeepAlivePacket { id: packet.id }).await?;
+                    self.writer
+                        .write_and_send_packet(&SPlayKeepAlivePacket { id: packet.id })
+                        .await?;
                 }
                 // Disconnect packet
                 PlayDisconnectPacket::ID => {
@@ -43,7 +46,11 @@ impl MinecraftClient {
                         packet.teleport_id
                     );
 
-                    self.writer.write_and_send_packet(&AcceptTeleportationPacket { teleport_id: packet.teleport_id }).await?;
+                    self.writer
+                        .write_and_send_packet(&AcceptTeleportationPacket {
+                            teleport_id: packet.teleport_id,
+                        })
+                        .await?;
 
                     self.writer
                         .write_and_send_packet(&MovePlayerPosRotPacket {
