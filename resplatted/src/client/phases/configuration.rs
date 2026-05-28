@@ -13,7 +13,7 @@ use resplatted_protocol::packet::configuration::s_known_pack::KnownPackPacket;
 use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
-    /// Handle login phase between the client and the server
+    /// Handle configuration phase between the client and the server
     pub async fn configuration(&mut self) -> std::io::Result<ProtocolState> {
         // Send the client information packet
         self.writer
@@ -74,6 +74,8 @@ impl MinecraftClient {
                 }
                 // Error on the network or unimplemented packet
                 _ => {
+                    // If we want, we can stop the program here on an unimplemented packet.
+                    // But right now, we just want to skip it so just a warn in the console is okay
                     /*return Err(Error::new(
                         ErrorKind::InvalidData,
                         format!(
