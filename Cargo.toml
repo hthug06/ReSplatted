@@ -21,3 +21,9 @@ tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thre
 log = "0.4.29"
 simplelog = "0.12.2"
 bytes = "1.11.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = 'abort'
