@@ -72,6 +72,8 @@ async fn main() -> Result<(), Error> {
                 return Ok(());
             }
         };
+
+        client.enter_game().await?;
     }
 
     info!("Disconnecting from {}...", address);
