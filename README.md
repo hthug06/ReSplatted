@@ -38,14 +38,15 @@ resplatted --address <ip_or_hostname> [OPTIONS]
 ```
 
 ### Available Options
-| Option               |  Short   | Default      |                                                                                            Description                                                                                            |
-|----------------------|:--------:|--------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| ```--address```      |    -     | **Required** |                                                                                     The server IP or hostname                                                                                     |
-| ```--port```         | ```-p``` | ```25565```  |                                                                                      The target server port                                                                                       |
-| ```--status```       | ```-s``` | ```false```  |                                                        See infos about the targetted server like in the server list of a minecraft client                                                         |
-| ```--bot_number```   | ```-b``` | ```1```      |                                                                               The number of bot sent to the server                                                                                |
-| ```--wait```         | ```-w``` | ```1```      |                                                         The base waiting time (in ms). Used differently depending on the `waiting-mode.`                                                          |
-| ```--waiting_mode``` | ```-```  | ```Linear``` | Waiting mode between each bot connection. `Linear`: delays each bot by (index * wait). `Static`: every bot waits exactly 'wait' ms. `Random`: every bot waits a random time between 0 and 'wait'. |
+| Option               |  Short   | Default          |                                                                                            Description                                                                                            |
+|----------------------|:--------:|------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| ```--address```      |    -     | **Required**     |                                                                                     The server IP or hostname                                                                                     |
+| ```--port```         | ```-p``` | ```25565```      |                                                                                      The target server port                                                                                       |
+| ```--status```       | ```-s``` | ```false```      |                                                        See infos about the targetted server like in the server list of a minecraft client                                                         |
+| ```--bot_number```   | ```-b``` | ```1```          |                                                                               The number of bot sent to the server                                                                                |
+| ```--wait```         | ```-w``` | ```1```          |                                                         The base waiting time (in ms). Used differently depending on the `waiting-mode.`                                                          |
+| ```--waiting_mode``` | ```-```  | ```Linear```     | Waiting mode between each bot connection. `Linear`: delays each bot by (index * wait). `Static`: every bot waits exactly 'wait' ms. `Random`: every bot waits a random time between 0 and 'wait'. |
+| ```--name```         | ```-n``` | ```ReSplatted``` |                                                                  The name of the bot (ex: test will be `test_1`, `test_2`, ...)                                                                   |
 
 
 # Example

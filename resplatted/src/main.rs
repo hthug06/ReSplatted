@@ -77,7 +77,7 @@ async fn main() -> Result<(), Error> {
             };
 
             // Set the name here, used one in function but more simple for logs
-            let bot_name = format!("ReSplatted_{}", i);
+            let bot_name = format!("{}_{}", args.name, i);
             let target_ptr = Arc::clone(&target);
 
             // For log

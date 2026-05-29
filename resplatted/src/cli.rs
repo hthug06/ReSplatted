@@ -33,6 +33,10 @@ pub struct Args {
     )]
     #[clap(value_enum, long, default_value_t = WaitingMode::Linear)]
     pub waiting_mode: WaitingMode,
+
+    #[clap(help = "The prefix for the bots' usernames")]
+    #[arg(long, short, default_value = "ReSplatted")]
+    pub name: String,
 }
 
 #[derive(Debug, ValueEnum, Clone)]
