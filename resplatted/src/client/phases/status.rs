@@ -1,12 +1,6 @@
-use base64::Engine;
-use std::{
-    fs::File,
-    io::{Cursor, Write},
-    path::Path,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
 use crate::client::core::MinecraftClient;
+use base64::Engine;
+use colored::{ColoredString, Colorize};
 use resplatted_protocol::packet::{
     PacketRead,
     status::{
@@ -14,23 +8,82 @@ use resplatted_protocol::packet::{
         s_ping_request::PingRequestPacket, s_status_request::StatusRequestPacket,
     },
 };
+use std::{
+    fs::File,
+    io::{Cursor, Write},
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
+use text_components::{TextComponent, resolving::NoResolutor}; // <-- NOUVEL IMPORT
 
-/// Because favicon use § with a char for color, we need to skip them
-fn clean_motd(motd: &str) -> String {
-    let mut cleaned = String::new();
-    let mut skip_next = false;
-    for c in motd.chars() {
-        if skip_next {
-            skip_next = false;
+/// For colors, legacy motd used
+/// Convertit une chaîne avec des codes Minecraft '§' en une chaîne colorée pour le terminal
+fn color_legacy_codes(text: &str) -> String {
+    let mut result = String::new();
+    let mut current_color: Option<&str> = None;
+    let mut is_bold = false;
+
+    let mut parts = text.split('§').peekable();
+
+    // Ajoute la première partie (avant le premier §)
+    if let Some(first) = parts.next() {
+        result.push_str(first);
+    }
+
+    for part in parts {
+        if part.is_empty() {
             continue;
         }
-        if c == '§' {
-            skip_next = true;
-        } else {
-            cleaned.push(c);
+
+        // Le premier caractère est le code couleur (ex: 'c' pour rouge)
+        let code = part.chars().next().unwrap();
+        // Le reste est le texte à colorer
+        let content = &part[1..];
+
+        // On détermine la couleur ANSI correspondante
+        match code {
+            '0' => current_color = Some("black"),
+            '1' => current_color = Some("blue"),
+            '2' => current_color = Some("green"),
+            '3' => current_color = Some("cyan"),
+            '4' => current_color = Some("red"),
+            '5' => current_color = Some("magenta"),
+            '6' => current_color = Some("yellow"),
+            '7' => current_color = Some("white"), // Gris clair dans MC
+            '8' => current_color = Some("bright black"), // Gris foncé
+            '9' => current_color = Some("bright blue"),
+            'a' => current_color = Some("bright green"),
+            'b' => current_color = Some("bright cyan"),
+            'c' => current_color = Some("bright red"),
+            'd' => current_color = Some("bright magenta"),
+            'e' => current_color = Some("bright yellow"),
+            'f' => current_color = Some("bright white"),
+            'l' => is_bold = true,
+            'r' => {
+                // Reset tout
+                current_color = None;
+                is_bold = false;
+            }
+            _ => {} // Ignore les codes de formatage non gérés (k, m, n, o)
+        }
+
+        // Applique la couleur si on a du texte
+        if !content.is_empty() {
+            let mut colored_text: ColoredString = content.into();
+
+            if let Some(color_name) = current_color {
+                colored_text = colored_text.color(color_name);
+            }
+            if is_bold {
+                colored_text = colored_text.bold();
+            }
+
+            // On ajoute le texte coloré (converti avec les codes ANSI) au résultat
+            result.push_str(&colored_text.to_string());
         }
     }
-    cleaned
+
+    result
 }
 
 /// Used to save the favicon in the `temp` directory
@@ -46,10 +99,8 @@ fn save_favicon(base64_string: &str, server_name: &str) -> std::io::Result<Strin
         .decode(parts[1])
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-    match std::fs::create_dir(Path::new("temp")) {
-        Ok(_) => {}
-        Err(e) => return Err(e),
-    }
+    std::fs::create_dir_all(Path::new("temp"))?;
+
     let filepath = format!("./temp/{}_favicon.png", server_name);
     let mut file = File::create(&filepath)?;
     file.write_all(&image_bytes)?;
@@ -69,6 +120,7 @@ impl MinecraftClient {
             let mut cursor = Cursor::new(raw_packet.payload.as_slice());
             let response = StatusResponsePacket::read(&mut cursor)?;
 
+            // JSON from the response of the packet
             let parsed: serde_json::Value =
                 serde_json::from_str(&response.response).unwrap_or_else(|_| serde_json::json!({}));
 
@@ -76,35 +128,53 @@ impl MinecraftClient {
             println!("             SERVER INFOS                     ");
             println!("==============================================");
 
+            // Version
             if let Some(version) = parsed.get("version") {
                 let name = version
                     .get("name")
                     .and_then(|v| v.as_str())
                     .unwrap_or("Unknown");
-
                 let protocol = version
                     .get("protocol")
                     .and_then(|v| v.as_i64())
                     .map(|p| p.to_string())
                     .unwrap_or("Unknown".to_string());
-
                 println!("📌 Version : {} (Protocol version : {})", name, protocol);
             }
 
+            // Player (online and max)
             if let Some(players) = parsed.get("players") {
                 let online = players.get("online").and_then(|v| v.as_i64()).unwrap_or(0);
                 let max = players.get("max").and_then(|v| v.as_i64()).unwrap_or(0);
                 println!("👥 Players : {} / {}", online, max);
             }
 
+            // MOTD (with snbt or legacy)
             if let Some(desc) = parsed.get("description") {
-                let raw_desc = desc.as_str().unwrap_or("");
-                println!(
-                    "📝 MOTD    : {}",
-                    clean_motd(raw_desc).replace("\n", "\n                  ")
-                );
+                let desc_str = desc.to_string();
+                let desc_color = color_legacy_codes(&desc_str);
+                if desc_color != desc_str {
+                    println!("📝 MOTD    : {}", desc_color);
+                } else {
+                    match TextComponent::from_snbt(&desc_str) {
+                        Ok(component) => {
+                            println!(
+                                "📝 MOTD    : {}",
+                                component
+                                    .to_pretty(&NoResolutor)
+                                    .replace("\n", "\n              ")
+                            );
+                        }
+                        Err(e) => {
+                            log::warn!("Failed to parse SNBT for MOTD : {}", e);
+                            // when an error occur, just display the normal text
+                            println!("📝 MOTD    : {}", desc);
+                        }
+                    }
+                }
             }
 
+            // Favicon (if exist)
             if let Some(favicon) = parsed.get("favicon") {
                 let base64_str = favicon.as_str().unwrap_or("");
                 if let Ok(path) = save_favicon(base64_str, target_ip) {

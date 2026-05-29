@@ -15,12 +15,15 @@ authors = ["ht06"]
 resplatted-protocol = { path = "resplatted-protocol" }
 
 # External dependencies
-tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thread", "macros", "signal"] }
+tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thread", "macros", "signal", "time"] }
 
 # log
 log = "0.4.29"
 simplelog = "0.12.2"
 bytes = "1.11.1"
+
+# textcomponent, to read packet
+text_components = { git = "https://github.com/Steel-Foundation/TextComponents.git", features = ["serde"]}
 
 [profile.release]
 opt-level = 3
