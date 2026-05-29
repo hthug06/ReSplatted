@@ -25,3 +25,4 @@ base64 = "0.22.1"
 
 # flate for packet compression
 flate2 = "1.1.9"
+tokio-util = "0.7.18"

@@ -3,7 +3,7 @@ use crate::client::{
     state::ProtocolState,
 };
 use resplatted_protocol::packet::handshake::{HandshakeNextState, HandshakePacket};
-use tokio::io::BufReader;
+use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
 pub struct MinecraftClient {
@@ -29,6 +29,11 @@ impl MinecraftClient {
             },
             state: ProtocolState::Handshake,
         })
+    }
+
+    /// Gracefully close the TCP connection (send FIN) instead of an abrupt drop.
+    pub async fn disconnect(&mut self) -> std::io::Result<()> {
+        self.writer.stream.shutdown().await
     }
 
     /// Handshake function for the client

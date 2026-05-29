@@ -15,7 +15,7 @@ authors = ["ht06"]
 resplatted-protocol = { path = "resplatted-protocol" }
 
 # External dependencies
-tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thread", "macros", "signal"] }
 
 # log
 log = "0.4.29"

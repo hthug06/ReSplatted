@@ -1,11 +1,13 @@
 use crate::cli::Args;
 use crate::client::{core::MinecraftClient, state::ProtocolState};
 use clap::Parser;
-use log::{LevelFilter, info};
+use log::{LevelFilter, info, warn};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::io::Error;
+use std::process::exit;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio_util::sync::CancellationToken;
 
 mod cli;
 mod client;
@@ -46,9 +48,13 @@ async fn main() -> Result<(), Error> {
     } else {
         // All the bots task
         let mut bot_tasks = Vec::new();
+
         // For logs
         let connected_count = Arc::new(AtomicUsize::new(0));
         let total_bots = args.bot_number;
+
+        // Used to disconnect bots
+        let cancel_token = CancellationToken::new();
 
         for i in 1..=args.bot_number {
             // Set the name here, used one in function but more simple for logs
@@ -57,6 +63,9 @@ async fn main() -> Result<(), Error> {
 
             // For log
             let count_ptr = Arc::clone(&connected_count);
+
+            // To disconnect bots
+            let child_token = cancel_token.clone();
 
             // Start a new background task,
             // This task is an entire bot
@@ -99,17 +108,42 @@ async fn main() -> Result<(), Error> {
                     }
                 };
 
-                // Play | Game loop
-                if let Err(e) = client.enter_game().await {
-                    let current = count_ptr.fetch_sub(1, Ordering::SeqCst) - 1;
+                // Play | Game loop with ctrl+C handling
+                tokio::select! {
+                    // Activate if enter_game return an error (disconnected by the server or crashed)
+                    result = client.enter_game() => {
+                        let current = count_ptr.fetch_sub(1, Ordering::Relaxed) - 1;
 
-                    log::error!(
-                        "[{}] Disconnected: {}. {}/{}",
-                        bot_name,
-                        e,
-                        current,
-                        total_bots
-                    );
+                        if let Err(e) = result {
+                            log::error!(
+                                "[{}] Disconnected: {}. {}/{}",
+                                bot_name,
+                                e,
+                                current,
+                                total_bots
+                            );
+                        }
+
+                        // Stop the program if no bot remain
+                        if current == 0 {
+                            info!("All bot are disconnected.");
+                            info!("Stopping ReSplatted");
+                            exit(1);
+                        }
+                    }
+
+                    // When the user stop the program (ctrl+C)
+                    _ = child_token.cancelled() => {
+
+                        // Close the TCP Socket nicely
+                        if let Err(e) = client.disconnect().await {
+                            warn!("[{}] Error during disconnecting: {}", bot_name, e);
+                        }
+
+                        // On décrémente aussi le compteur ici, car le bot s'en va
+                        let current = count_ptr.fetch_sub(1, Ordering::SeqCst) - 1;
+                        info!("[{}] Stopped by user. {}/{}", bot_name, current, total_bots);
+                    }
                 }
             });
 
@@ -117,14 +151,23 @@ async fn main() -> Result<(), Error> {
             bot_tasks.push(handle);
         }
 
+        // Ctrl +C handling
+        match tokio::signal::ctrl_c().await {
+            Ok(()) => {
+                info!("Disconnecting all bots from {}:{}...", target, port);
+                // Stop all task with the cancellation token
+                cancel_token.cancel();
+            }
+            Err(e) => log::error!("Failed to handle Ctrl+C: {}", e),
+        }
+
         // Wait here for the bot
-        // The program stop when every bot disconnected
+        // Used for log when ctrl+C is called
         for task in bot_tasks {
             let _ = task.await;
         }
     }
 
-    info!("Disconnecting from {}:{}...", target, port);
     info!("Stopping ReSplatted");
     Ok(())
 }
