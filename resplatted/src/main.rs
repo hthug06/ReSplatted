@@ -1,4 +1,4 @@
-use crate::cli::Args;
+use crate::cli::{Args, WaitingMode};
 use crate::client::{core::MinecraftClient, state::ProtocolState};
 use clap::Parser;
 use log::{LevelFilter, info, warn};
@@ -7,6 +7,7 @@ use std::io::Error;
 use std::process::exit;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 mod cli;
@@ -57,6 +58,24 @@ async fn main() -> Result<(), Error> {
         let cancel_token = CancellationToken::new();
 
         for i in 1..=args.bot_number {
+            let delay_ms = match args.waiting_mode {
+                // Linear: Each bot wait a little bit more than the previous one
+                // Bot 0 wait 0ms, Bot 2 wait 50ms, Bot 3 attend 100ms...
+                WaitingMode::Linear => i as u64 * args.wait,
+
+                // Static: EVERY bot wait the samt time and connect at the same time after this delay
+                WaitingMode::Static => args.wait,
+
+                // Random: Each bot wait a random time before connecting
+                WaitingMode::Random => {
+                    if args.wait > 0 {
+                        rand::random_range(1..args.wait)
+                    } else {
+                        0
+                    }
+                }
+            };
+
             // Set the name here, used one in function but more simple for logs
             let bot_name = format!("ReSplatted_{}", i);
             let target_ptr = Arc::clone(&target);
@@ -70,7 +89,13 @@ async fn main() -> Result<(), Error> {
             // Start a new background task,
             // This task is an entire bot
             let handle = tokio::spawn(async move {
-                // info!("Démarrage du bot {}", bot_name);
+                // In the waiting, check if the program stopped
+                if delay_ms > 0 {
+                    tokio::select! {
+                        _ = tokio::time::sleep(Duration::from_millis(delay_ms)) => {}
+                        _ = child_token.cancelled() => return,
+                    }
+                }
 
                 let mut client = match MinecraftClient::connect(&target_ptr, port).await {
                     Ok(c) => c,
@@ -134,13 +159,13 @@ async fn main() -> Result<(), Error> {
 
                     // When the user stop the program (ctrl+C)
                     _ = child_token.cancelled() => {
-
+                        // *10 else server can't send the last packet they have
+                        tokio::time::sleep(Duration::from_millis((i*10) as u64)).await;
                         // Close the TCP Socket nicely
                         if let Err(e) = client.disconnect().await {
                             warn!("[{}] Error during disconnecting: {}", bot_name, e);
                         }
 
-                        // On décrémente aussi le compteur ici, car le bot s'en va
                         let current = count_ptr.fetch_sub(1, Ordering::SeqCst) - 1;
                         info!("[{}] Stopped by user. {}/{}", bot_name, current, total_bots);
                     }
@@ -151,20 +176,25 @@ async fn main() -> Result<(), Error> {
             bot_tasks.push(handle);
         }
 
-        // Ctrl +C handling
-        match tokio::signal::ctrl_c().await {
-            Ok(()) => {
+        let mut wait_all_bots = tokio::spawn(async move {
+            for task in bot_tasks {
+                let _ = task.await;
+            }
+        });
+
+        tokio::select! {
+            // CTRL+C
+            _ = tokio::signal::ctrl_c() => {
                 info!("Disconnecting all bots from {}:{}...", target, port);
                 // Stop all task with the cancellation token
                 cancel_token.cancel();
+                // Wait for bots to disconnect
+                let _ = wait_all_bots.await;
             }
-            Err(e) => log::error!("Failed to handle Ctrl+C: {}", e),
-        }
-
-        // Wait here for the bot
-        // Used for log when ctrl+C is called
-        for task in bot_tasks {
-            let _ = task.await;
+            // All bot disconnected naturally
+            _ = &mut wait_all_bots => {
+                info!("All bots are disconnected or the test is finished.");
+            }
         }
     }
 

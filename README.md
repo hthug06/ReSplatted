@@ -38,12 +38,14 @@ resplatted --address <ip_or_hostname> [OPTIONS]
 ```
 
 ### Available Options
-| Option             |  Short   | Default      |                                    Description                                     |
-|--------------------|:--------:|--------------|:----------------------------------------------------------------------------------:|
-| ```--address```    |    -     | **Required** |                             The server IP or hostname                              |
-| ```--port```       | ```-p``` | ```25565```  |                               The target server port                               |
-| ```--status```     | ```-s``` | ```false```  | See infos about the targetted server like in the server list of a minecraft client |
-| ```--bot_number``` | ```-b``` | ```1```      |                        The number of bot sent to the server                        |
+| Option               |  Short   | Default      |                                                                                            Description                                                                                            |
+|----------------------|:--------:|--------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| ```--address```      |    -     | **Required** |                                                                                     The server IP or hostname                                                                                     |
+| ```--port```         | ```-p``` | ```25565```  |                                                                                      The target server port                                                                                       |
+| ```--status```       | ```-s``` | ```false```  |                                                        See infos about the targetted server like in the server list of a minecraft client                                                         |
+| ```--bot_number```   | ```-b``` | ```1```      |                                                                               The number of bot sent to the server                                                                                |
+| ```--wait```         | ```-w``` | ```1```      |                                                         The base waiting time (in ms). Used differently depending on the `waiting-mode.`                                                          |
+| ```--waiting_mode``` | ```-```  | ```Linear``` | Waiting mode between each bot connection. `Linear`: delays each bot by (index * wait). `Static`: every bot waits exactly 'wait' ms. `Random`: every bot waits a random time between 0 and 'wait'. |
 
 
 # Example
@@ -60,6 +62,34 @@ Output:
                             SB LOTUS ATOLL - BW DREAMFEAST
 🖼️  Favicon : Saved in ./temp/mc.hypixel.net_favicon.png
 ```
+
+
+# Performance & Benchmarks
+
+ReSplatted is built with Rust and the `tokio` asynchronous runtime, designed to be extremely lightweight and blazingly fast. It uses asynchronous I/O and shared memory states (`Arc`) to spawn thousands of concurrent connections without overwhelming the host machine.
+
+## The 1,000 Bots Benchmark
+Tested on a local environment sending 1,000 concurrent bot connections to a local server. (Needed to use a rust server software like [SteelMC](https://steel-foundation.github.io/SteelDocs/) or [PumpkinMC](https://pumpkinmc.org/), java server like [PaperMC](https://papermc.io/) can't handle 1000 or can, but I don't have the money for a big server.)
+
+**Test Environment:**
+
+- **CPU:** AMD Ryzen 5 7520U (4 Cores / 8 Logical Processors @ 2.80 GHz)
+
+- **Host RAM:** 16.0 GB
+
+- **OS:** Linux Ubuntu (WSL2) - Kernel 6.6.114.1 (WSL Available RAM: 7.4 GB available)
+
+- **Command:** ./resplatted --address localhost -n 1000 --waiting-mode linear -w 50
+
+**Resource Footprint:**
+
+- **Memory (RAM):** ~15.5 MB (Resident Set Size)
+
+- **CPU Usage:** ~50% of a single core (out of 8 cores)
+
+- **Cost per Bot:** ~15 KB of RAM per active connection
+
+- **Note:** To achieve these results, ensure you compile and run the tool in release mode using cargo run --release. Debug mode will consume significantly more CPU and Memory.
 
 ## Other information
 * This project is a way for me to learn rust and the Minecraft protocol.

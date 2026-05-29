@@ -471,6 +471,7 @@ dependencies = [
  "colored",
  "flate2",
  "log",
+ "rand",
  "resplatted-protocol",
  "serde_json",
  "simplelog",
