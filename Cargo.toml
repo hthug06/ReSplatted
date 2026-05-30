@@ -18,7 +18,7 @@ resplatted-protocol = { path = "resplatted-protocol" }
 tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thread", "macros", "signal", "time"] }
 
 # log
-log = "0.4.29"
+log = "0.4.30"
 simplelog = "0.12.2"
 bytes = "1.11.1"
 
