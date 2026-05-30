@@ -16,7 +16,7 @@ impl PacketRead for PlayDisconnectPacket {
         // TODO: use a nbt reader
         let clean_reason: String = buf
             .into_iter()
-            .filter(|&b| b >= 32 && b <= 126) // ASCII table
+            .filter(|&b| (32..=126).contains(&b)) // ASCII table
             .map(|b| b as char)
             .collect();
 
