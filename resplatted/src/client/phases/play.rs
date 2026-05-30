@@ -1,6 +1,7 @@
 use crate::client::core::MinecraftClient;
 use log::debug;
 use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
+use resplatted_protocol::packet::play::s_move_player_rot::MovePlayerRotPacket;
 use resplatted_protocol::packet::{
     PacketRead,
     play::{
@@ -64,7 +65,7 @@ impl MinecraftClient {
                         .await?;
                 }
                 // The time update packet.
-                // This packet repeat every second, so we can use it to spam the chat lol
+                // This packet repeat every second, so we can use it to spam the chat lol and rotate the head to not get kicked
                 0x71 => {
                     if let Some(message) = &message {
                         self.writer
@@ -73,6 +74,14 @@ impl MinecraftClient {
                             })
                             .await?;
                     }
+
+                    self.writer
+                        .write_and_send_packet(&MovePlayerRotPacket {
+                            yaw: rand::random_range(-180.0..=180.0),
+                            pitch: rand::random_range(-90.0..=90.0),
+                            flags: 0x01,
+                        })
+                        .await?;
                 }
 
                 // Error on the network or unimplemented packet
