@@ -1,5 +1,6 @@
 use crate::client::core::MinecraftClient;
 use log::debug;
+use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
 use resplatted_protocol::packet::{
     PacketRead,
     play::{
@@ -12,7 +13,7 @@ use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
-    pub async fn enter_game(&mut self) -> std::io::Result<()> {
+    pub async fn enter_game(&mut self, message: Option<String>) -> std::io::Result<()> {
         // read loop
         loop {
             // read the raw packet
@@ -61,6 +62,17 @@ impl MinecraftClient {
                             flags: 0x01,
                         })
                         .await?;
+                }
+                // The time update packet.
+                // This packet repeat every second, so we can use it to spam the chat lol
+                0x71 => {
+                    if let Some(message) = &message {
+                        self.writer
+                            .write_and_send_packet(&ChatMessagePacket {
+                                message: message.clone(),
+                            })
+                            .await?;
+                    }
                 }
 
                 // Error on the network or unimplemented packet

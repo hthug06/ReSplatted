@@ -8,6 +8,18 @@ pub struct Args {
     #[arg(long)]
     pub address: String,
 
+    #[clap(help = "The number of bot you want to send to the server")]
+    #[arg(long, short, default_value_t = 1)]
+    pub bot_number: u32,
+
+    #[clap(help = "The message every bot will spam every second. ")]
+    #[arg(long, short)]
+    pub message: Option<String>,
+
+    #[clap(help = "The prefix for the bots' usernames")]
+    #[arg(long, short, default_value = "ReSplatted")]
+    pub name: String,
+
     #[clap(help = "The port of the server")]
     #[arg(long, short, default_value_t = 25565)]
     pub port: u16,
@@ -17,10 +29,6 @@ pub struct Args {
     )]
     #[arg(long, short, default_value_t = false)]
     pub status: bool,
-
-    #[clap(help = "The number of bot you want to send to the server")]
-    #[arg(long, short, default_value_t = 1)]
-    pub bot_number: u32,
 
     #[clap(
         help = "The base waiting time (in ms). Used differently depending on the waiting_mode."
@@ -33,10 +41,6 @@ pub struct Args {
     )]
     #[clap(value_enum, long, default_value_t = WaitingMode::Linear)]
     pub waiting_mode: WaitingMode,
-
-    #[clap(help = "The prefix for the bots' usernames")]
-    #[arg(long, short, default_value = "ReSplatted")]
-    pub name: String,
 }
 
 #[derive(Debug, ValueEnum, Clone)]

@@ -41,12 +41,13 @@ resplatted --address <ip_or_hostname> [OPTIONS]
 | Option               |  Short   | Default          |                                                                                            Description                                                                                            |
 |----------------------|:--------:|------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
 | ```--address```      |    -     | **Required**     |                                                                                     The server IP or hostname                                                                                     |
+| ```--bot_number```   | ```-b``` | ```1```          |                                                                               The number of bot sent to the server                                                                                |
+| ```--message```      | ```-m``` | `-`              |                                                                            A message every bot will spam every second                                                                             |
+| ```--name```         | ```-n``` | ```ReSplatted``` |                                                                  The name of the bot (ex: test will be `test_1`, `test_2`, ...)                                                                   |
 | ```--port```         | ```-p``` | ```25565```      |                                                                                      The target server port                                                                                       |
 | ```--status```       | ```-s``` | ```false```      |                                                        See infos about the targetted server like in the server list of a minecraft client                                                         |
-| ```--bot_number```   | ```-b``` | ```1```          |                                                                               The number of bot sent to the server                                                                                |
 | ```--wait```         | ```-w``` | ```1```          |                                                         The base waiting time (in ms). Used differently depending on the `waiting-mode.`                                                          |
 | ```--waiting_mode``` | ```-```  | ```Linear```     | Waiting mode between each bot connection. `Linear`: delays each bot by (index * wait). `Static`: every bot waits exactly 'wait' ms. `Random`: every bot waits a random time between 0 and 'wait'. |
-| ```--name```         | ```-n``` | ```ReSplatted``` |                                                                  The name of the bot (ex: test will be `test_1`, `test_2`, ...)                                                                   |
 
 
 # Example
@@ -80,15 +81,15 @@ Tested on a local environment sending 1,000 concurrent bot connections to a loca
 
 - **OS:** Linux Ubuntu (WSL2) - Kernel 6.6.114.1 (WSL Available RAM: 7.4 GB available)
 
-- **Command:** ./resplatted --address localhost -n 1000 --waiting-mode linear -w 50
+- **Command:** ./resplatted --address localhost -n 1000 --waiting-mode linear -w 100
 
 **Resource Footprint:**
 
-- **Memory (RAM):** ~15.5 MB (Resident Set Size)
+- **Memory (RAM):** ~15.1 MB (Resident Set Size)
 
-- **CPU Usage:** ~50% of a single core (out of 8 cores)
+- **CPU Usage:** ~1.3% of a single core (out of 8 cores)
 
-- **Cost per Bot:** ~15 KB of RAM per active connection
+- **Cost per Bot:** ~15.1 KB of RAM per active connection
 
 - **Note:** To achieve these results, ensure you compile and run the tool in release mode using cargo run --release. Debug mode will consume significantly more CPU and Memory.
 

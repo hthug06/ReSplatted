@@ -86,6 +86,9 @@ async fn main() -> Result<(), Error> {
             // To disconnect bots
             let child_token = cancel_token.clone();
 
+            // To send message
+            let message = args.message.clone();
+
             // Start a new background task,
             // This task is an entire bot
             let handle = tokio::spawn(async move {
@@ -136,7 +139,7 @@ async fn main() -> Result<(), Error> {
                 // Play | Game loop with ctrl+C handling
                 tokio::select! {
                     // Activate if enter_game return an error (disconnected by the server or crashed)
-                    result = client.enter_game() => {
+                    result = client.enter_game(message) => {
                         let current = count_ptr.fetch_sub(1, Ordering::Relaxed) - 1;
 
                         if let Err(e) = result {

@@ -7,3 +7,5 @@ authors.workspace = true
 [dependencies]
 bytes.workspace = true
 uuid = { version = "1.23.1", features = ["v4"] }
+# rand.workspace = true remove the comment when using rand for the chat message packet
+
