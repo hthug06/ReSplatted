@@ -30,3 +30,10 @@ flate2 = "1.1.9"
 tokio-util = "0.7.18"
 colored = "3.1.1"
 rand.workspace = true
+
+# Bench
+criterion = { version = "0.8.2", features = ["async_tokio"] }
+
+[[bench]]
+name = "packet_decompression"
+harness = false # Obligatoire pour dire à Cargo que Criterion gère le lancement
