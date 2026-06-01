@@ -4,6 +4,14 @@ use std::io::{Cursor, Read};
 use tokio::io::{AsyncReadExt, BufReader};
 use tokio::net::tcp::OwnedReadHalf;
 
+/// Used to resize the buffer when the packet size is too big
+/// For now, a bot stand and do nothing, so when it's connected, it will only received
+/// packet like the movement packet. After spawning in the world, buffers are going to
+/// be reallocated like 10 time and that all. I think that okay.
+///
+/// Later, if the bot diversify, update the MAX_BUFFER_CAPACITY.
+const MAX_BUFFER_CAPACITY: usize = 1_024; // 1 Ko, can be changed
+
 /// The packet reader struct contain everything needed to read a packet,
 /// the stream, the cipher and the compression_threshold
 pub struct PacketReader {
@@ -11,6 +19,8 @@ pub struct PacketReader {
     pub compression_threshold: Option<i32>,
     // Later, encryption and compression will be here
     // pub cipher: Option<Aes128Cfb8Decryptor>,
+    pub raw_buffer: Vec<u8>,
+    pub decompress_buffer: Vec<u8>,
 }
 
 impl PacketReader {
@@ -31,32 +41,45 @@ impl PacketReader {
         let length = length as usize;
 
         // Put all the packet in a buffer
-        let mut raw_buffer = vec![0u8; length];
-        self.stream.read_exact(&mut raw_buffer).await?;
+        self.raw_buffer.clear();
+        self.raw_buffer.resize(length, 0);
+        self.stream.read_exact(&mut self.raw_buffer).await?;
 
         // Decrypt everything
 
         // If compression active, decompress
-        let decompressed_data = decompress_payload(&raw_buffer, self.compression_threshold)?;
+        decompress_payload(
+            &self.raw_buffer,
+            self.compression_threshold,
+            &mut self.decompress_buffer,
+        )?;
 
         // Extract id and data
-        let mut cursor = Cursor::new(&decompressed_data);
+        let mut cursor = Cursor::new(&self.decompress_buffer);
         let id = cursor.read_var_int()?;
-
         let position = cursor.position() as usize;
-        let payload = decompressed_data[position..].to_vec();
+
+        let payload = self.decompress_buffer[position..].to_vec();
+
+        // resize buffer if a packet is too big
+        if self.raw_buffer.capacity() > MAX_BUFFER_CAPACITY {
+            self.raw_buffer = Vec::with_capacity(MAX_BUFFER_CAPACITY);
+        }
+        if self.decompress_buffer.capacity() > MAX_BUFFER_CAPACITY {
+            self.decompress_buffer = Vec::with_capacity(MAX_BUFFER_CAPACITY);
+        }
 
         Ok(RawPacket { id, payload })
     }
 
     /// Read a byte with decryption (used to read varint)
     async fn read_byte(&mut self) -> std::io::Result<u8> {
-        let mut buf = [0u8; 1];
-        self.stream.read_exact(&mut buf).await?;
+        // Read directly from the cache
+        let b = self.stream.read_u8().await?;
 
         // decrypt here (later)
 
-        Ok(buf[0])
+        Ok(b)
     }
 
     /// read a varint byte by byte (async)
@@ -86,14 +109,18 @@ impl PacketReader {
 pub fn decompress_payload(
     raw_buffer: &[u8],
     compression_threshold: Option<i32>,
-) -> std::io::Result<Vec<u8>> {
+    out_buffer: &mut Vec<u8>,
+) -> std::io::Result<()> {
     if let Some(threshold) = compression_threshold {
         let mut cursor = Cursor::new(raw_buffer);
         let uncompressed_length = cursor.read_var_int()?;
         let pos = cursor.position() as usize;
 
         if uncompressed_length == 0 {
-            Ok(raw_buffer[pos..].to_vec())
+            out_buffer.clear();
+            out_buffer.resize(raw_buffer.len() - pos, 0);
+            out_buffer.copy_from_slice(&raw_buffer[pos..]);
+            Ok(())
         } else {
             if uncompressed_length < threshold {
                 return Err(std::io::Error::new(
@@ -115,20 +142,25 @@ pub fn decompress_payload(
 
             let compressed_data = &raw_buffer[pos..];
             let mut decoder = ZlibDecoder::new(compressed_data);
-            let mut decompressed_data = vec![0u8; uncompressed_length as usize];
-            decoder.read_exact(&mut decompressed_data)?;
 
-            Ok(decompressed_data)
+            // Resize instead of reallocating a new vec
+            out_buffer.clear();
+            out_buffer.resize(uncompressed_length as usize, 0);
+            decoder.read_exact(out_buffer)?;
+
+            Ok(())
         }
     } else {
-        Ok(raw_buffer.to_vec())
+        out_buffer.clear();
+        out_buffer.resize(raw_buffer.len(), 0);
+        out_buffer.copy_from_slice(raw_buffer);
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bytes::{BufMut, BytesMut};
     use flate2::Compression;
     use flate2::write::ZlibEncoder;
     use resplatted_protocol::io::write::MinecraftWriteExt;
@@ -137,8 +169,9 @@ mod tests {
     #[test]
     fn test_decompression_disabled() {
         let fake_data = vec![0x01, 0x02, 0x03];
-        let result = decompress_payload(&fake_data, None).unwrap();
-        assert_eq!(result, fake_data);
+        let mut out_buffer = Vec::new();
+        decompress_payload(&fake_data, None, &mut out_buffer).unwrap();
+        assert_eq!(out_buffer, fake_data);
     }
 
     #[test]
@@ -150,25 +183,27 @@ mod tests {
         encoder.write_all(&original_data).unwrap();
         let compressed_data = encoder.finish().unwrap();
 
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(original_data.len() as i32);
-        network_buffer.put_slice(&compressed_data);
+        network_buffer.extend_from_slice(&compressed_data);
 
-        let result = decompress_payload(&network_buffer, Some(threshold)).unwrap();
-        assert_eq!(result, original_data);
+        let mut out_buffer = Vec::new();
+        decompress_payload(&network_buffer, Some(threshold), &mut out_buffer).unwrap();
+        assert_eq!(out_buffer, original_data);
     }
 
     /// Try an uncompressed packet with the compression active (uncompressed_length == 0)
     #[test]
     fn test_decode_compression_active_uncompressed_packet() {
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(0); // Data Length = 0
-        network_buffer.put_slice(&[0xDE, 0xAD, 0xBE, 0xEF]); // Payload brut
+        network_buffer.extend_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF]); // Payload brut
 
-        let result = decompress_payload(&network_buffer, Some(256)).unwrap();
+        let mut out_buffer = Vec::new();
+        decompress_payload(&network_buffer, Some(256), &mut out_buffer).unwrap();
 
         assert_eq!(
-            result,
+            out_buffer,
             vec![0xDE, 0xAD, 0xBE, 0xEF],
             "Should return bytes without any changes"
         );
@@ -184,25 +219,26 @@ mod tests {
         encoder.write_all(&original_data).unwrap();
         let compressed_data = encoder.finish().unwrap();
 
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(50); // Data Length = 50
-        network_buffer.put_slice(&compressed_data);
+        network_buffer.extend_from_slice(&compressed_data);
 
-        let result = decompress_payload(&network_buffer, Some(threshold));
+        let mut out_buffer = Vec::new();
+        let result = decompress_payload(&network_buffer, Some(threshold), &mut out_buffer);
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::InvalidData);
     }
 
-    // 3. Paquet dépassant 8 388 608 bytes (Zip Bomb)
     /// Packet size > 8 388 608 bytes (Zip Bomb)
     #[test]
     fn test_decode_rejects_zip_bomb() {
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(10_000_000);
-        network_buffer.put_slice(&[0x78, 0x9C, 0x01, 0x02]);
+        network_buffer.extend_from_slice(&[0x78, 0x9C, 0x01, 0x02]);
 
-        let result = decompress_payload(&network_buffer, Some(256));
+        let mut out_buffer = Vec::new();
+        let result = decompress_payload(&network_buffer, Some(256), &mut out_buffer);
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::InvalidData);
@@ -211,12 +247,13 @@ mod tests {
     // Corrupt data / invalid zlib
     #[test]
     fn test_decode_invalid_zlib_data() {
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(500); // valid size (> 256)
         // send random byte that does not respect zlib
-        network_buffer.put_slice(&[0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x11]);
+        network_buffer.extend_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x11]);
 
-        let result = decompress_payload(&network_buffer, Some(256));
+        let mut out_buffer = Vec::new();
+        let result = decompress_payload(&network_buffer, Some(256), &mut out_buffer);
 
         assert!(result.is_err());
     }
@@ -230,14 +267,15 @@ mod tests {
         encoder.write_all(&original_data).unwrap();
         let compressed_data = encoder.finish().unwrap();
 
-        let mut network_buffer = BytesMut::new();
+        let mut network_buffer = Vec::new();
         network_buffer.write_var_int(5); // Data Length = 5
-        network_buffer.put_slice(&compressed_data);
+        network_buffer.extend_from_slice(&compressed_data);
 
-        let result = decompress_payload(&network_buffer, Some(0)).unwrap();
+        let mut out_buffer = Vec::new();
+        decompress_payload(&network_buffer, Some(0), &mut out_buffer).unwrap();
 
         assert_eq!(
-            result, original_data,
+            out_buffer, original_data,
             "Should decompress every packet because threshold = 0 "
         );
     }

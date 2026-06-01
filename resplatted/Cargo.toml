@@ -36,4 +36,4 @@ criterion = { version = "0.8.2", features = ["async_tokio"] }
 
 [[bench]]
 name = "packet_decompression"
-harness = false # Obligatoire pour dire à Cargo que Criterion gère le lancement
+harness = false

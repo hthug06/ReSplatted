@@ -14,10 +14,9 @@ use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
-use text_components::{TextComponent, resolving::NoResolutor}; // <-- NOUVEL IMPORT
+use text_components::{TextComponent, resolving::NoResolutor};
 
 /// For colors, legacy motd used
-/// Convertit une chaîne avec des codes Minecraft '§' en une chaîne colorée pour le terminal
 fn color_legacy_codes(text: &str) -> String {
     let mut result = String::new();
     let mut current_color: Option<&str> = None;
@@ -25,7 +24,6 @@ fn color_legacy_codes(text: &str) -> String {
 
     let mut parts = text.split('§').peekable();
 
-    // Ajoute la première partie (avant le premier §)
     if let Some(first) = parts.next() {
         result.push_str(first);
     }
@@ -35,12 +33,9 @@ fn color_legacy_codes(text: &str) -> String {
             continue;
         }
 
-        // Le premier caractère est le code couleur (ex: 'c' pour rouge)
         let code = part.chars().next().unwrap();
-        // Le reste est le texte à colorer
         let content = &part[1..];
 
-        // On détermine la couleur ANSI correspondante
         match code {
             '0' => current_color = Some("black"),
             '1' => current_color = Some("blue"),
@@ -49,8 +44,8 @@ fn color_legacy_codes(text: &str) -> String {
             '4' => current_color = Some("red"),
             '5' => current_color = Some("magenta"),
             '6' => current_color = Some("yellow"),
-            '7' => current_color = Some("white"), // Gris clair dans MC
-            '8' => current_color = Some("bright black"), // Gris foncé
+            '7' => current_color = Some("white"),
+            '8' => current_color = Some("bright black"),
             '9' => current_color = Some("bright blue"),
             'a' => current_color = Some("bright green"),
             'b' => current_color = Some("bright cyan"),
@@ -60,14 +55,12 @@ fn color_legacy_codes(text: &str) -> String {
             'f' => current_color = Some("bright white"),
             'l' => is_bold = true,
             'r' => {
-                // Reset tout
                 current_color = None;
                 is_bold = false;
             }
-            _ => {} // Ignore les codes de formatage non gérés (k, m, n, o)
+            _ => {}
         }
 
-        // Applique la couleur si on a du texte
         if !content.is_empty() {
             let mut colored_text: ColoredString = content.into();
 
@@ -78,7 +71,6 @@ fn color_legacy_codes(text: &str) -> String {
                 colored_text = colored_text.bold();
             }
 
-            // On ajoute le texte coloré (converti avec les codes ANSI) au résultat
             result.push_str(&colored_text.to_string());
         }
     }

@@ -22,6 +22,8 @@ impl MinecraftClient {
             reader: PacketReader {
                 stream: BufReader::new(read_half),
                 compression_threshold: None,
+                raw_buffer: Vec::new(),
+                decompress_buffer: Vec::new(),
             },
             writer: PacketWriter {
                 stream: write_half,

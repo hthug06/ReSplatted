@@ -1,8 +1,7 @@
-/// Use cargo bench --bench packet_decompression -- --save-baseline main to save
-/// After the change, (adapt and) cargo bench --bench packet_decompression -- --baseline main
-
+/// Use `cargo bench --bench packet_decompression -- --save-baseline main` to save
+/// After the change, adapt and run `cargo bench --bench packet_decompression -- --baseline main`
 use bytes::BytesMut;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 use resplatted::client::network::packet_reader::decompress_payload;
 use resplatted::client::network::packet_writer::compress_payload;
@@ -16,15 +15,17 @@ fn generate_fake_compressed_packet(size: usize) -> BytesMut {
 }
 
 fn bench_decompression(c: &mut Criterion) {
-    // On génère un paquet de 8 Ko (représentatif d'un chunk data moyen)
     let network_packet = generate_fake_compressed_packet(8192);
+    let mut out_buffer: Vec<u8> = Vec::new();
 
     c.bench_function("decompress_payload_8kb", |b| {
         b.iter(|| {
             let _result = decompress_payload(
                 std::hint::black_box(&network_packet),
-                std::hint::black_box(Some(256))
-            ).unwrap();
+                std::hint::black_box(Some(256)),
+                std::hint::black_box(&mut out_buffer),
+            )
+            .unwrap();
         })
     });
 }
