@@ -1,4 +1,5 @@
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=plastic&logo=rust&logoColor=white)](https://www.youtube.com/watch?v=cE0wfjsybIQ&t=73s)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/hthug06/Splatted?style=social)]()
 
 <div align="center">
 
