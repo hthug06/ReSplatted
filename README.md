@@ -81,15 +81,15 @@ Tested on a local environment sending 1,000 concurrent bot connections to a loca
 
 - **OS:** Linux Ubuntu (WSL2) - Kernel 6.6.114.1 (WSL Available RAM: 7.4 GB available)
 
-- **Command:** ./resplatted --address localhost -n 1000 --waiting-mode linear -w 50
+- **Command:** ./resplatted --address localhost -n 1000 --waiting-mode linear -w 100
 
 **Resource Footprint:**
 
-- **Memory (RAM):** ~17 MB (Resident Set Size)
+- **Memory (RAM):** ~18 MB (Resident Set Size)
 
-- **CPU Usage:** ~3.7% total (29.75% of a single core out of 8)
+- **CPU Usage:** ~4.2% total (33.90% of a single core out of 8)
 
-- **Cost per Bot:** ~17 KB of RAM | ~0.037% CPU per bot
+- **Cost per Bot:** ~18 KB of RAM | ~0.042% CPU per bot
 
 - **Note:** To achieve these results, ensure you compile and run the tool in release mode using cargo run --release. Debug mode will consume significantly more CPU and Memory.
 

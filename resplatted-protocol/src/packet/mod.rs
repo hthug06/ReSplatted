@@ -5,7 +5,6 @@ pub mod play;
 pub mod status;
 
 use crate::io::write::MinecraftWriteExt;
-use bytes::BytesMut;
 use std::io::Cursor;
 
 #[derive(Debug)]
@@ -27,18 +26,18 @@ pub trait PacketRead: Sized {
 pub trait PacketWrite {
     const ID: i32;
     /// Write the packet into the buffer
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()>;
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()>;
 }
 
 /// Encode a packet into a BytesMut Buffer (ID + DATA)
-pub fn encode_packet<P: PacketWrite>(packet: &P) -> std::io::Result<BytesMut> {
-    let mut payload = BytesMut::with_capacity(128);
+pub fn encode_packet<P: PacketWrite>(packet: &P, buf: &mut Vec<u8>) -> std::io::Result<()> {
+    buf.clear();
 
     // ID
-    payload.write_var_int(P::ID);
+    buf.write_var_int(P::ID);
 
     // Then DATA
-    packet.write(&mut payload)?;
+    packet.write(buf)?;
 
-    Ok(payload)
+    Ok(())
 }

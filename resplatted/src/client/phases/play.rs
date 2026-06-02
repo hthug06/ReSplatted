@@ -1,5 +1,7 @@
 use crate::client::core::MinecraftClient;
 use log::debug;
+use rand::RngExt;
+use rand::rngs::SmallRng;
 use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
 use resplatted_protocol::packet::play::s_move_player_rot::MovePlayerRotPacket;
 use resplatted_protocol::packet::{
@@ -11,8 +13,6 @@ use resplatted_protocol::packet::{
     },
 };
 use std::io::{Cursor, Error, ErrorKind};
-use rand::RngExt;
-use rand::rngs::SmallRng;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
@@ -78,7 +78,6 @@ impl MinecraftClient {
                             })
                             .await?;
                     }
-
 
                     self.writer
                         .write_and_send_packet(&MovePlayerRotPacket {

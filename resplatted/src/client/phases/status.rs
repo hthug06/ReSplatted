@@ -180,7 +180,6 @@ impl MinecraftClient {
             println!("==============================================\n");
         }
 
-        // 3. Le Ping / Pong pour la latence
         let ping_payload = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

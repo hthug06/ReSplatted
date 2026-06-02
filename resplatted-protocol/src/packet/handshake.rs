@@ -1,6 +1,6 @@
 use super::PacketWrite;
 use crate::io::write::MinecraftWriteExt;
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
@@ -21,7 +21,7 @@ pub struct HandshakePacket {
 impl PacketWrite for HandshakePacket {
     const ID: i32 = 0x00;
 
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
         buf.write_var_int(self.protocol_version);
         buf.write_string(&self.server_address)?;
         buf.put_u16(self.server_port);

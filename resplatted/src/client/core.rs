@@ -28,6 +28,9 @@ impl MinecraftClient {
             writer: PacketWriter {
                 stream: write_half,
                 compression_threshold: None,
+                raw_payload_buffer: Vec::with_capacity(256),
+                compress_buffer: Vec::with_capacity(256),
+                final_buffer: Vec::with_capacity(256),
             },
             state: ProtocolState::Handshake,
         })

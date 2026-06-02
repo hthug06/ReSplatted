@@ -1,5 +1,5 @@
 use crate::io::{read::MinecraftReadExt, write::MinecraftWriteExt};
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 use std::io::{Error, Read};
 use uuid::Uuid;
 
@@ -78,9 +78,8 @@ impl GameProfile {
         })
     }
 
-    /// Encode un GameProfile dans un buffer sortant
     /// Write a gameprofile into a buffer
-    pub fn write(&self, buf: &mut BytesMut) -> Result<(), Error> {
+    pub fn write(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
         buf.put_slice(self.uuid.as_bytes());
         buf.write_string(&self.username)?;
 

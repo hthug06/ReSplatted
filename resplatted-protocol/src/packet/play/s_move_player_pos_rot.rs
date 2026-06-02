@@ -1,5 +1,5 @@
 use crate::packet::PacketWrite;
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 
 pub struct MovePlayerPosRotPacket {
     pub x: f64,
@@ -14,7 +14,7 @@ pub struct MovePlayerPosRotPacket {
 impl PacketWrite for MovePlayerPosRotPacket {
     const ID: i32 = 0x1F;
 
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
         buf.put_f64(self.x);
         buf.put_f64(self.feet_y);
         buf.put_f64(self.z);

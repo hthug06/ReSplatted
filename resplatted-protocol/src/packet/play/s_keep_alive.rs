@@ -1,5 +1,5 @@
 use crate::packet::PacketWrite;
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 
 pub struct SPlayKeepAlivePacket {
     pub id: i64,
@@ -8,7 +8,7 @@ pub struct SPlayKeepAlivePacket {
 impl PacketWrite for SPlayKeepAlivePacket {
     const ID: i32 = 0x1C;
 
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
         buf.put_i64(self.id);
         Ok(())
     }
