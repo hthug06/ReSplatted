@@ -1,10 +1,16 @@
+use uuid::Uuid;
+use crate::io::write_primitive::WritePrimitive;
+
 pub trait MinecraftWriteExt {
     fn write_var_int(&mut self, value: i32);
     fn write_string(&mut self, text: &str) -> std::io::Result<()>;
+    fn write_primitive_type<T: WritePrimitive>(&mut self, value: T);
+    fn write_uuid(&mut self, uuid: Uuid);
+
 }
 
 impl MinecraftWriteExt for Vec<u8> {
-    /// Write a Minecraft VarInt Into the ByteMut
+    /// Write a Minecraft VarInt Into the Vec
     fn write_var_int(&mut self, value: i32) {
         // Cast to u32 to perform a logical bit shift rather than an arithmetic one
         let mut val = value as u32;
@@ -34,6 +40,16 @@ impl MinecraftWriteExt for Vec<u8> {
         // then text (bytes)
         self.extend_from_slice(bytes);
         Ok(())
+    }
+
+    /// Write a primitive (i.., u.., f.., bool) type into the buffer
+    fn write_primitive_type<T: WritePrimitive>(&mut self, value: T) {
+        value.write_to(self);
+    }
+
+    /// Write a UUID in the buffer
+    fn write_uuid(&mut self, uuid: Uuid) {
+        self.extend_from_slice(uuid.as_bytes());
     }
 }
 

@@ -764,7 +764,6 @@ name = "resplatted"
 version = "1.1.1"
 dependencies = [
  "base64",
- "bytes",
  "clap",
  "colored",
  "criterion",
@@ -783,7 +782,6 @@ dependencies = [
 name = "resplatted-protocol"
 version = "1.1.1"
 dependencies = [
- "bytes",
  "fastnbt",
  "uuid",
 ]

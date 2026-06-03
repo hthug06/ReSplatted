@@ -1,6 +1,5 @@
 use crate::io::write::MinecraftWriteExt;
 use crate::packet::PacketWrite;
-use bytes::BufMut;
 use uuid::Uuid;
 
 pub struct LoginStartPacket {
@@ -21,7 +20,7 @@ impl PacketWrite for LoginStartPacket {
 
     fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
         buf.write_string(&self.username)?;
-        buf.put_slice(self.uuid.as_bytes());
+        buf.write_uuid(self.uuid);
 
         Ok(())
     }

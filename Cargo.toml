@@ -20,13 +20,11 @@ tokio = { version = "1.52.3", features = ["net", "io-util", "rt", "rt-multi-thre
 # log
 log = "0.4.30"
 simplelog = "0.12.2"
-bytes = "1.11.1"
 
 # textcomponent, to read packet
 text_components = { git = "https://github.com/Steel-Foundation/TextComponents.git", features = ["serde"]}
 
 rand = "0.10.1"
-
 
 [profile.release]
 opt-level = 3

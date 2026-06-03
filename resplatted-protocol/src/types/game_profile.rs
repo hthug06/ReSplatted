@@ -1,5 +1,4 @@
 use crate::io::{read::MinecraftReadExt, write::MinecraftWriteExt};
-use bytes::BufMut;
 use std::io::{Error, Read};
 use uuid::Uuid;
 
@@ -80,7 +79,7 @@ impl GameProfile {
 
     /// Write a gameprofile into a buffer
     pub fn write(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
-        buf.put_slice(self.uuid.as_bytes());
+        buf.write_uuid(self.uuid);
         buf.write_string(&self.username)?;
 
         buf.write_var_int(self.properties.len() as i32);
@@ -89,10 +88,10 @@ impl GameProfile {
             buf.write_string(&prop.value)?;
 
             if let Some(sig) = &prop.signature {
-                buf.put_u8(1); // is_signed = true
+                buf.write_primitive_type(1u8); // is_signed = true
                 buf.write_string(sig)?;
             } else {
-                buf.put_u8(0); // is_signed = false
+                buf.write_primitive_type(0u8); // is_signed = false
             }
         }
         Ok(())
