@@ -1,12 +1,11 @@
-use uuid::Uuid;
 use crate::io::write_primitive::WritePrimitive;
+use uuid::Uuid;
 
 pub trait MinecraftWriteExt {
     fn write_var_int(&mut self, value: i32);
     fn write_string(&mut self, text: &str) -> std::io::Result<()>;
     fn write_primitive_type<T: WritePrimitive>(&mut self, value: T);
     fn write_uuid(&mut self, uuid: Uuid);
-
 }
 
 impl MinecraftWriteExt for Vec<u8> {

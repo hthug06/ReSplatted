@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use std::sync::Arc;
 
 /// Struct to get all argument from the CLI
 #[derive(Parser, Debug)]
@@ -14,7 +15,7 @@ pub struct Args {
 
     #[clap(help = "The message every bot will spam every second. ")]
     #[arg(long, short)]
-    pub message: Option<String>,
+    pub message: Option<Arc<String>>,
 
     #[clap(help = "The prefix for the bots' usernames")]
     #[arg(long, short, default_value = "ReSplatted")]

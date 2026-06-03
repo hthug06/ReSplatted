@@ -86,11 +86,11 @@ Tested on a local environment sending 1,000 concurrent bot connections to a loca
 
 **Resource Footprint:**
 
-- **Memory (RAM):** ~18 MB (Resident Set Size)
+- **Memory (RAM):** ~16.5 MB (Resident Set Size)
 
-- **CPU Usage:** ~4.2% total (33.90% of a single core out of 8)
+- **CPU Usage:** ~6.0% total (48.39% of a single core out of 8)
 
-- **Cost per Bot:** ~18 KB of RAM | ~0.042% CPU per bot
+- **Cost per Bot:** ~16.5 KB of RAM | ~0.060% CPU per bot
 
 - **Note:** To achieve these results, ensure you compile and run the tool in release mode using cargo run --release. Debug mode will consume significantly more CPU and Memory.
 

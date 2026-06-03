@@ -1,10 +1,11 @@
 use crate::io::write::MinecraftWriteExt;
 use crate::packet::PacketWrite;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Player_Chat_Message
 pub struct ChatMessagePacket {
-    pub message: String,
+    pub message: Arc<String>,
 }
 
 impl PacketWrite for ChatMessagePacket {

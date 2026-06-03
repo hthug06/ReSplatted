@@ -13,10 +13,11 @@ use resplatted_protocol::packet::{
     },
 };
 use std::io::{Cursor, Error, ErrorKind};
+use std::sync::Arc;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
-    pub async fn enter_game(&mut self, message: Option<String>) -> std::io::Result<()> {
+    pub async fn enter_game(&mut self, message: Option<Arc<String>>) -> std::io::Result<()> {
         let mut rng: SmallRng = rand::make_rng();
 
         // read loop
@@ -74,7 +75,7 @@ impl MinecraftClient {
                     if let Some(message) = &message {
                         self.writer
                             .write_and_send_packet(&ChatMessagePacket {
-                                message: message.clone(),
+                                message: Arc::clone(message),
                             })
                             .await?;
                     }
