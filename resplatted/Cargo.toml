@@ -14,8 +14,7 @@ simplelog.workspace = true
 
 #tokio
 tokio.workspace = true
-
-bytes.workspace = true
+tokio-util = "0.7.18" # Cancellation Token
 
 text_components.workspace = true
 
@@ -27,8 +26,10 @@ base64 = "0.22.1"
 
 # flate for packet compression
 flate2 = "1.1.9"
-tokio-util = "0.7.18"
+
+# Color the motd when fetching the status
 colored = "3.1.1"
+
 rand.workspace = true
 
 # Bench
@@ -36,4 +37,4 @@ criterion = { version = "0.8.2", features = ["async_tokio"] }
 
 [[bench]]
 name = "packet_decompression"
-harness = false # Obligatoire pour dire à Cargo que Criterion gère le lancement
+harness = false

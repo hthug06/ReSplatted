@@ -1,5 +1,7 @@
 use crate::client::core::MinecraftClient;
 use log::debug;
+use rand::RngExt;
+use rand::rngs::SmallRng;
 use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
 use resplatted_protocol::packet::play::s_move_player_rot::MovePlayerRotPacket;
 use resplatted_protocol::packet::{
@@ -11,10 +13,13 @@ use resplatted_protocol::packet::{
     },
 };
 use std::io::{Cursor, Error, ErrorKind};
+use std::sync::Arc;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
-    pub async fn enter_game(&mut self, message: Option<String>) -> std::io::Result<()> {
+    pub async fn enter_game(&mut self, message: Option<Arc<String>>) -> std::io::Result<()> {
+        let mut rng: SmallRng = rand::make_rng();
+
         // read loop
         loop {
             // read the raw packet
@@ -70,15 +75,15 @@ impl MinecraftClient {
                     if let Some(message) = &message {
                         self.writer
                             .write_and_send_packet(&ChatMessagePacket {
-                                message: message.clone(),
+                                message: Arc::clone(message),
                             })
                             .await?;
                     }
 
                     self.writer
                         .write_and_send_packet(&MovePlayerRotPacket {
-                            yaw: rand::random_range(-180.0..=180.0),
-                            pitch: rand::random_range(-90.0..=90.0),
+                            yaw: rng.random_range(-180.0..=180.0),
+                            pitch: rng.random_range(-90.0..=90.0),
                             flags: 0x01,
                         })
                         .await?;

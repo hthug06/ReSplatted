@@ -1,5 +1,5 @@
+use crate::io::write::MinecraftWriteExt;
 use crate::packet::PacketWrite;
-use bytes::{BufMut, BytesMut};
 
 pub struct MovePlayerPosRotPacket {
     pub x: f64,
@@ -14,13 +14,13 @@ pub struct MovePlayerPosRotPacket {
 impl PacketWrite for MovePlayerPosRotPacket {
     const ID: i32 = 0x1F;
 
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
-        buf.put_f64(self.x);
-        buf.put_f64(self.feet_y);
-        buf.put_f64(self.z);
-        buf.put_f32(self.yaw);
-        buf.put_f32(self.pitch);
-        buf.put_u8(self.flags);
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
+        buf.write_primitive_type(self.x);
+        buf.write_primitive_type(self.feet_y);
+        buf.write_primitive_type(self.z);
+        buf.write_primitive_type(self.yaw);
+        buf.write_primitive_type(self.pitch);
+        buf.write_primitive_type(self.flags);
         Ok(())
     }
 }

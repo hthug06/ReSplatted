@@ -1,6 +1,5 @@
 use crate::io::write::MinecraftWriteExt;
 use crate::packet::PacketWrite;
-use bytes::{BufMut, BytesMut};
 
 /// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Client_Information_(configuration)
 pub struct ClientInformationPacket {
@@ -54,15 +53,15 @@ impl Default for ClientInformationPacket {
 impl PacketWrite for ClientInformationPacket {
     const ID: i32 = 0x00;
 
-    fn write(&self, buf: &mut BytesMut) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
         buf.write_string(self.locale.as_str())?;
-        buf.put_i8(self.view_distance);
+        buf.write_primitive_type(self.view_distance);
         buf.write_var_int(self.chat_mode as i32);
-        buf.put_u8(if self.chat_colors { 1 } else { 0 });
-        buf.put_u8(self.displayed_skin_parts);
+        buf.write_primitive_type(self.chat_colors);
+        buf.write_primitive_type(self.displayed_skin_parts);
         buf.write_var_int(self.main_hand as i32);
-        buf.put_u8(if self.enable_text_filtering { 1 } else { 0 });
-        buf.put_u8(if self.allow_server_listing { 1 } else { 0 });
+        buf.write_primitive_type(self.enable_text_filtering);
+        buf.write_primitive_type(self.allow_server_listing);
         buf.write_var_int(self.particles_status as i32);
         Ok(())
     }

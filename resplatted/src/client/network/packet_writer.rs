@@ -1,4 +1,3 @@
-use bytes::{BufMut, BytesMut};
 use flate2::{Compression, write::ZlibEncoder};
 use resplatted_protocol::{
     io::write::MinecraftWriteExt,
@@ -14,6 +13,9 @@ pub struct PacketWriter {
     pub compression_threshold: Option<i32>,
     // For the Future
     // pub cipher: Option<Aes128Cfb8Encryptor>,
+    pub raw_payload_buffer: Vec<u8>,
+    pub compress_buffer: Vec<u8>,
+    pub final_buffer: Vec<u8>,
 }
 
 impl PacketWriter {
@@ -22,26 +24,31 @@ impl PacketWriter {
         &mut self,
         packet: &P,
     ) -> std::io::Result<()> {
-        // get ID + DATA
-        let raw_payload = encode_packet(packet)?;
+        // encode ID + DATA
+        encode_packet(packet, &mut self.raw_payload_buffer)?;
 
         // Compress here before the final buffer, so if the compression fail no ram is allocated
-        let processed_payload = compress_payload(&raw_payload, self.compression_threshold)?;
+        compress_payload(
+            &self.raw_payload_buffer,
+            self.compression_threshold,
+            &mut self.compress_buffer,
+        )?;
 
-        // Create the buffer that we're going to send
-        let mut final_buffer = BytesMut::new();
+        // Clear the previous buffer
+        self.final_buffer.clear();
 
         // Create final the packet
         // Packet size
-        final_buffer.write_var_int(processed_payload.len() as i32);
+        self.final_buffer
+            .write_var_int(self.compress_buffer.len() as i32);
         // Then the id + data
-        final_buffer.put_slice(&processed_payload);
+        self.final_buffer.extend_from_slice(&self.compress_buffer);
 
         // The encryption will be here
         // https://minecraft.wiki/w/Java_Edition_protocol/Encryption
 
         // Packet is ready, send it to the network
-        self.stream.write_all(&final_buffer).await?;
+        self.stream.write_all(&self.final_buffer).await?;
         Ok(())
     }
 }
@@ -52,8 +59,9 @@ impl PacketWriter {
 pub fn compress_payload(
     raw_payload: &[u8],
     compression_threshold: Option<i32>,
-) -> std::io::Result<BytesMut> {
-    let mut data_buffer = BytesMut::new();
+    out_buffer: &mut Vec<u8>,
+) -> std::io::Result<()> {
+    out_buffer.clear();
 
     let uncompressed_length = raw_payload.len();
     if uncompressed_length > 8_388_608 {
@@ -69,24 +77,22 @@ pub fn compress_payload(
     if let Some(threshold) = compression_threshold {
         // Nothing to compress
         if (uncompressed_length as i32) < threshold {
-            data_buffer.write_var_int(0);
-            data_buffer.put_slice(raw_payload);
+            out_buffer.write_var_int(0);
+            out_buffer.extend_from_slice(raw_payload);
         }
         // Compress
         else {
-            data_buffer.write_var_int(uncompressed_length as i32);
-
-            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+            out_buffer.write_var_int(uncompressed_length as i32);
+            // Write directly into the out_buffer
+            let mut encoder = ZlibEncoder::new(&mut *out_buffer, Compression::default());
             encoder.write_all(raw_payload)?;
-            let compressed_payload = encoder.finish()?;
-
-            data_buffer.put_slice(&compressed_payload);
+            encoder.finish()?;
         }
     }
     // Compression not active
     else {
-        data_buffer.put_slice(raw_payload);
+        out_buffer.extend_from_slice(raw_payload);
     }
 
-    Ok(data_buffer)
+    Ok(())
 }

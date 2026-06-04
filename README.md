@@ -1,4 +1,5 @@
 [![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=plastic&logo=rust&logoColor=white)](https://www.youtube.com/watch?v=cE0wfjsybIQ&t=73s)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/hthug06/Splatted?style=social)]()
 
 <div align="center">
 
@@ -85,11 +86,11 @@ Tested on a local environment sending 1,000 concurrent bot connections to a loca
 
 **Resource Footprint:**
 
-- **Memory (RAM):** ~15.1 MB (Resident Set Size)
+- **Memory (RAM):** ~16.5 MB (Resident Set Size)
 
-- **CPU Usage:** ~1.3% of a single core (out of 8 cores)
+- **CPU Usage:** ~6.0% total (48.39% of a single core out of 8)
 
-- **Cost per Bot:** ~15.1 KB of RAM per active connection
+- **Cost per Bot:** ~16.5 KB of RAM | ~0.060% CPU per bot
 
 - **Note:** To achieve these results, ensure you compile and run the tool in release mode using cargo run --release. Debug mode will consume significantly more CPU and Memory.
 

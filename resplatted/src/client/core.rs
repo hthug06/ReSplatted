@@ -22,10 +22,15 @@ impl MinecraftClient {
             reader: PacketReader {
                 stream: BufReader::new(read_half),
                 compression_threshold: None,
+                raw_buffer: Vec::new(),
+                decompress_buffer: Vec::new(),
             },
             writer: PacketWriter {
                 stream: write_half,
                 compression_threshold: None,
+                raw_payload_buffer: Vec::with_capacity(32), // 32 because all the data in the packet should
+                compress_buffer: Vec::with_capacity(32), // Not be more than 32 bytes (ex: connecting to
+                final_buffer: Vec::with_capacity(32),    // hypixel is 22 bytes)
             },
             state: ProtocolState::Handshake,
         })
