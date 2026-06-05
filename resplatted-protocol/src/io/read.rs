@@ -7,9 +7,22 @@ pub trait MinecraftReadExt {
     fn read_var_int(&mut self) -> std::io::Result<i32>;
     /// Read an utf-8 String
     fn read_string(&mut self) -> std::io::Result<String>;
+
+    /// read a byte
+    fn read_u8(&mut self) -> std::io::Result<u8>;
+
     /// Read an u16.
     /// Same as i16, but without the & 65536
     fn read_u16(&mut self) -> std::io::Result<u16>;
+    /// Read an u32.
+    /// Same as i16, but unsigned
+    fn read_u32(&mut self) -> std::io::Result<u32>;
+    /// Read an u64.
+    /// Same as i64, but unsigned
+    fn read_u64(&mut self) -> std::io::Result<u64>;
+
+    /// Read an i16 (short).
+    fn read_i16(&mut self) -> std::io::Result<i16>;
 
     /// Read an i32 (int)
     fn read_i32(&mut self) -> std::io::Result<i32>;
@@ -70,10 +83,34 @@ impl<R: Read> MinecraftReadExt for R {
         String::from_utf8(bytes).map_err(|e| Error::new(ErrorKind::InvalidData, e.to_string()))
     }
 
+    fn read_u8(&mut self) -> std::io::Result<u8> {
+        let mut buf = [0u8; 1];
+        self.read_exact(&mut buf)?;
+        Ok(u8::from_be_bytes(buf))
+    }
+
     fn read_u16(&mut self) -> std::io::Result<u16> {
         let mut buf = [0u8; 2];
         self.read_exact(&mut buf)?;
         Ok(u16::from_be_bytes(buf))
+    }
+
+    fn read_u32(&mut self) -> std::io::Result<u32> {
+        let mut buf = [0u8; 4];
+        self.read_exact(&mut buf)?;
+        Ok(u32::from_be_bytes(buf))
+    }
+
+    fn read_u64(&mut self) -> std::io::Result<u64> {
+        let mut buf = [0u8; 8];
+        self.read_exact(&mut buf)?;
+        Ok(u64::from_be_bytes(buf))
+    }
+
+    fn read_i16(&mut self) -> std::io::Result<i16> {
+        let mut buf = [0u8; 2];
+        self.read_exact(&mut buf)?;
+        Ok(i16::from_be_bytes(buf))
     }
 
     fn read_i32(&mut self) -> std::io::Result<i32> {

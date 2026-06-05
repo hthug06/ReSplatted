@@ -18,7 +18,7 @@ async fn main() -> Result<(), Error> {
     // First of all init log
     // Start log
     TermLogger::init(
-        LevelFilter::Info, // Use LevelFilter::Debug for debugging (LOL)
+        LevelFilter::Debug, // Use LevelFilter::Debug for debugging (LOL)
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,

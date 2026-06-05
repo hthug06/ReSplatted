@@ -783,6 +783,7 @@ name = "resplatted-protocol"
 version = "1.1.1"
 dependencies = [
  "fastnbt",
+ "serde",
  "uuid",
 ]
 
