@@ -7,7 +7,6 @@ pub enum HeightmapType {
     WorldSurface = 1,
     MotionBlocking = 4,
     MotionBlockingNoLeaves = 5,
-    OceanFloor = 6,
 }
 
 impl HeightmapType {
@@ -16,7 +15,6 @@ impl HeightmapType {
             1 => Some(HeightmapType::WorldSurface),
             4 => Some(HeightmapType::MotionBlocking),
             5 => Some(HeightmapType::MotionBlockingNoLeaves),
-            6 => Some(HeightmapType::OceanFloor),
             _ => None,
         }
     }
