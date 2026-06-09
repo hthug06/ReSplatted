@@ -2,7 +2,7 @@ use crate::io::read::MinecraftReadExt;
 use crate::packet::PacketRead;
 use crate::types::chunk_section::ChunkSection;
 use crate::types::height_map::Heightmaps;
-use std::io::{Cursor, Error};
+use std::io::{Cursor, Read};
 
 #[derive(Debug)]
 /// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Chunk_Data_and_Update_Light
@@ -30,25 +30,29 @@ impl PacketRead for LevelChunkWithLightPacket {
         // The array is not prefixed
         // The number of elements in the array is calculated based on the world's height.
         // Send from bottom to top (because the higher you are, the less block there is)
-        // 24 section in the overworld
-        // handle nether and end later. The login packet send the height of the world
-        let mut chunk_data = Vec::with_capacity(24);
-        for i in 0..24 {
-            let section = ChunkSection::read(cursor)?;
-            let y_min = -64 + (i as i32 * 16);
+
+        // Read the size, put it into a buffer and then, read all the section
+        let data_size = cursor.read_var_int()?;
+
+        let mut chunk_data_bytes = vec![0; data_size as usize];
+        cursor.read_exact(&mut chunk_data_bytes)?;
+
+        // Read section from this new buffer and a new cursor
+        let mut section_cursor = Cursor::new(chunk_data_bytes.as_slice());
+        let mut chunk_data = Vec::new();
+
+        let mut i = 0;
+        while section_cursor.position() < data_size as u64 {
+            let section = ChunkSection::read(&mut section_cursor)?;
+            let y_min = -64 + (i * 16);
             let y_max = y_min + 15;
             println!(
-                "Section {i} (Y {y_min}..{y_max}): block_count={}",
-                section.block_count
+                "Section {i} (Y {y_min}..{y_max}): block_count={} and liquid_count={}",
+                section.block_count, section.liquid_count
             );
             chunk_data.push(section);
+            i += 1;
         }
-
-        return Err(Error::other(
-            "Chunk data with light is not fully implemented yet, we need to handle block entities and light data",
-        ));
-
-        println!("chunk data: {:?}", chunk_data);
 
         Ok(Self {
             x,

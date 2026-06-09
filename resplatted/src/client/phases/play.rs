@@ -94,8 +94,8 @@ impl MinecraftClient {
                         "Received Level Chunk With Light packet with payload size: {} bytes",
                         raw_packet.payload.len()
                     );
-                    let packet =
-                        LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    // let packet =
+                    LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
                     /*info!(
                         "Received Level Chunk With Light packet for chunk ({}, {}) with heightmaps: {:?}",
                         packet.x, packet.z, packet.heightmaps

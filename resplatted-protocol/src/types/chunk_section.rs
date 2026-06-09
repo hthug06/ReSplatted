@@ -6,6 +6,7 @@ use std::io::{Cursor, Error};
 #[derive(Debug)]
 pub struct ChunkSection {
     pub block_count: i16,
+    pub liquid_count: i16, // Only in 26.1 +
     pub block_state: PalettedContainer,
     pub biomes: PalettedContainer,
 }
@@ -13,19 +14,15 @@ pub struct ChunkSection {
 impl ChunkSection {
     /// Read a chunk section
     pub fn read(cursor: &mut Cursor<&[u8]>) -> Result<ChunkSection, Error> {
-        // 100% OKAY
-        let size = cursor.read_var_int()?;
-        println!("Chunk section size: {}", size);
+        // No VarInt Size since 1.21.5
         let block_count = cursor.read_i16()?;
-        println!("Chunk section block count: {}", block_count);
-
-        //  TODO: find the bug here
+        let liquid_count = cursor.read_i16()?;
         let block_state = PalettedContainer::read(cursor, 4096, 4, 8)?;
-
         let biomes = PalettedContainer::read(cursor, 64, 1, 3)?;
 
         Ok(ChunkSection {
             block_count,
+            liquid_count,
             block_state,
             biomes,
         })
@@ -35,7 +32,7 @@ impl ChunkSection {
 /// A Paletted Container is a palette-based storage of entries.
 /// Paletted Containers have an associated global palette (either block states or biomes as of now), where values are mapped from.
 #[derive(Debug)]
-struct PalettedContainer {
+pub struct PalettedContainer {
     pub data: Vec<i64>,
 }
 
@@ -57,49 +54,52 @@ impl PalettedContainer {
         min_indirect: u8,
         max_indirect: u8,
     ) -> std::io::Result<Self> {
+        // How many byte are used to stock all the different block?
+        // 0 byte = 2**0 = 1
+        // 1 byte = 2**1 = 2
+        // 2 byte = 2**2 = 4
+        // 4 byte = 2**3 = 16
+        // ...
         let bits_per_entry = cursor.read_u8()?;
-        println!("bits_per_entry: {}", bits_per_entry);
-        println!(
-            "expected_entries: {}, min_indirect: {}, max_indirect: {}",
-            expected_entries, min_indirect, max_indirect
-        );
 
-        // read palette
+        // Read palette
+        // 0 bpe => 1 block | 1 biome for the whole section
         let palette = if bits_per_entry == 0 {
             Some(Palette::SingleValued {
                 global_id: cursor.read_var_int()? as i64,
             })
-        } else if bits_per_entry >= min_indirect && bits_per_entry <= max_indirect {
+        }
+        // 4-8 bpe for block | 1-3 bpe for biome => a palette of block / biome
+        else if bits_per_entry >= min_indirect && bits_per_entry <= max_indirect {
             let palette_length = cursor.read_var_int()?;
             let mut palette = Vec::with_capacity(palette_length as usize);
             for _ in 0..palette_length {
                 palette.push(cursor.read_var_int()? as i64);
             }
             Some(Palette::Indirect { mapping: palette })
-        } else {
+        }
+        // 15 bpe for block | 7 bpe for biome => no palette, all possible values are used
+        // Also if we fall on an unknow number like 9 bpe for block, we consider it as a direct palette, (this should never happen)
+        else {
             Some(Palette::Direct)
         };
 
-        println!("Palette: {:?}", palette);
-
-        // Get all the data (it's an array of long)
-        // But as 1.21.5+, the lenght isn't sent
+        // As 1.21.5+, the length isn't sent
         // We need to calculate it manually
         let mut raw_data = Vec::new();
 
         if bits_per_entry > 0 {
             let bpe = bits_per_entry as usize;
 
+            // From the wiki, equal to ceil(log2(world_height + 1))
             let entries_per_long = 64 / bpe;
-            let data_length = (expected_entries + entries_per_long - 1) / entries_per_long;
+            let data_length = expected_entries.div_ceil(entries_per_long);
 
             raw_data.reserve(data_length);
             for _ in 0..data_length {
                 raw_data.push(cursor.read_i64()?);
             }
         }
-
-        // println!("bits per entry: {}, palette: {:?}, raw data length: {}", bits_per_entry, palette, raw_data.len());
 
         // Decompress everything
         // 4096 for block and 64 for biomes
@@ -136,8 +136,6 @@ impl PalettedContainer {
                 "Invalid bits per entry in PalettedContainer",
             ))?,
         }
-
-        println!("final data: {:?}", final_data);
 
         Ok(Self { data: final_data })
     }
