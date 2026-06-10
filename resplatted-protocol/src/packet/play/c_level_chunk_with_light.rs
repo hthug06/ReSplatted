@@ -1,5 +1,6 @@
 use crate::io::read::MinecraftReadExt;
 use crate::packet::PacketRead;
+use crate::types::block_entity::BlockEntity;
 use crate::types::chunk_section::ChunkSection;
 use crate::types::height_map::Heightmaps;
 use std::io::{Cursor, Read};
@@ -10,7 +11,8 @@ pub struct LevelChunkWithLightPacket {
     pub x: i32,
     pub z: i32,
     pub heightmaps: Heightmaps,
-    chunk_data: Vec<ChunkSection>,
+    pub chunk_data: Vec<ChunkSection>,
+    pub block_entities: Vec<BlockEntity>,
 }
 
 impl PacketRead for LevelChunkWithLightPacket {
@@ -24,7 +26,6 @@ impl PacketRead for LevelChunkWithLightPacket {
         let z = cursor.read_i32()?;
 
         let heightmaps = Heightmaps::read(cursor)?;
-        println!("Heightmaps: {:?}", heightmaps);
 
         // DATA aka array of chunk section
         // The array is not prefixed
@@ -41,17 +42,15 @@ impl PacketRead for LevelChunkWithLightPacket {
         let mut section_cursor = Cursor::new(chunk_data_bytes.as_slice());
         let mut chunk_data = Vec::new();
 
-        let mut i = 0;
         while section_cursor.position() < data_size as u64 {
-            let section = ChunkSection::read(&mut section_cursor)?;
-            let y_min = -64 + (i * 16);
-            let y_max = y_min + 15;
-            println!(
-                "Section {i} (Y {y_min}..{y_max}): block_count={} and liquid_count={}",
-                section.block_count, section.liquid_count
-            );
-            chunk_data.push(section);
-            i += 1;
+            chunk_data.push(ChunkSection::read(&mut section_cursor)?);
+        }
+
+        // Block entities
+        // Aka block that can contain data
+        let mut block_entities = Vec::new();
+        for _ in 0..cursor.read_var_int()? {
+            block_entities.push(BlockEntity::read(cursor)?);
         }
 
         Ok(Self {
@@ -59,12 +58,8 @@ impl PacketRead for LevelChunkWithLightPacket {
             z,
             heightmaps,
             chunk_data,
+            block_entities,
         })
-
-        // Block entities
-        /*let block_entities_size = cursor.read_var_int()?;
-        let mut block_entities_data = vec![0; block_entities_size as usize];
-        cursor.read_to_end(&mut block_entities_data)?;*/
 
         /*// Light data
         // Sky Light Mask

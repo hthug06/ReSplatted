@@ -90,16 +90,19 @@ impl MinecraftClient {
                         .await?;
                 }
                 LevelChunkWithLightPacket::ID => {
-                    info!(
+                    /*  info!(
                         "Received Level Chunk With Light packet with payload size: {} bytes",
                         raw_packet.payload.len()
-                    );
-                    // let packet =
-                    LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
-                    /*info!(
-                        "Received Level Chunk With Light packet for chunk ({}, {}) with heightmaps: {:?}",
-                        packet.x, packet.z, packet.heightmaps
                     );*/
+                    let packet =
+                        LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    info!(
+                        "Fully read chunk data for chunk ({}, {}), with {} blocks and {} liquid blocks",
+                        packet.x,
+                        packet.z,
+                        packet.chunk_data[0].block_count,
+                        packet.chunk_data[0].liquid_count
+                    );
                 }
                 // Error on the network or unimplemented packet
                 _ => {
