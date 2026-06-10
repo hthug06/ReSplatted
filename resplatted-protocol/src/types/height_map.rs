@@ -21,11 +21,11 @@ impl HeightmapType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Heightmaps {
+pub struct Heightmap {
     pub heightmaps: HashMap<HeightmapType, Vec<u16>>,
 }
 
-impl Heightmaps {
+impl Heightmap {
     /// Unpack the bit-packing from the flux
     /// https://minecraft.wiki/w/Java_Edition_protocol/Chunk_format#Hints_for_implementers
     fn unpack_data(raw_data: &[i64], bits_per_value: usize) -> Vec<u16> {
@@ -75,7 +75,7 @@ impl Heightmaps {
 
             // Decompress
             if let Some(t) = heightmap_type {
-                parsed_heightmaps.insert(t, Heightmaps::unpack_data(&raw_data, 9));
+                parsed_heightmaps.insert(t, Heightmap::unpack_data(&raw_data, 9));
             } else {
                 println!(
                     "Unknown heightmap type with id {:?}, skipping...",

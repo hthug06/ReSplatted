@@ -1,4 +1,5 @@
 use crate::io::read::MinecraftReadExt;
+use crate::types::block_pos::BlockPos;
 use std::io::{Cursor, Error};
 
 /// A chunk section is a 16x16x16 cube of blocks.
@@ -26,6 +27,26 @@ impl ChunkSection {
             block_state,
             biomes,
         })
+    }
+
+    pub fn get_block_at(&self, pos: BlockPos) -> Result<i64, Error> {
+        // convert these data into local (only in the chunk) data
+        let local_x = (pos.x & 15) as usize;
+        let local_y = (pos.y & 15) as usize;
+        let local_z = (pos.z & 15) as usize;
+
+        // Official formula
+        // (local_y * 256) + (local_z * 16) + local_x
+        let index = (local_y << 8) | (local_z << 4) | local_x;
+
+        let block_id = self.block_state.data.get(index).ok_or_else(|| {
+            Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Block index out of bounds in section",
+            )
+        })?;
+
+        Ok(*block_id)
     }
 }
 

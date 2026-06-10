@@ -13,8 +13,10 @@ use resplatted_protocol::packet::{
         s_keep_alive::SPlayKeepAlivePacket, s_move_player_pos_rot::MovePlayerPosRotPacket,
     },
 };
+use resplatted_protocol::types::chunk::Chunk;
 use std::io::{Cursor, Error, ErrorKind};
 use std::sync::Arc;
+use resplatted_protocol::types::block_pos::BlockPos;
 
 impl MinecraftClient {
     /// Handle play phase between the client and the server
@@ -90,19 +92,18 @@ impl MinecraftClient {
                         .await?;
                 }
                 LevelChunkWithLightPacket::ID => {
-                    /*  info!(
-                        "Received Level Chunk With Light packet with payload size: {} bytes",
-                        raw_packet.payload.len()
-                    );*/
-                    let packet =
-                        LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    let chunk = Chunk::from_level_chunk_packet(LevelChunkWithLightPacket::read(
+                        &mut Cursor::new(&raw_packet.payload),
+                    )?);
                     info!(
                         "Fully read chunk data for chunk ({}, {}), with {} blocks and {} liquid blocks",
-                        packet.x,
-                        packet.z,
-                        packet.chunk_data[0].block_count,
-                        packet.chunk_data[0].liquid_count
+                        chunk.x,
+                        chunk.z,
+                        chunk.count_total_block(),
+                        chunk.count_total_liquid()
                     );
+
+                    info!("Block in 0 0 0 (local chunk coordinates): {}", chunk.get_block_at(BlockPos{x: 0, y: -64, z:0})?);
                 }
                 // Error on the network or unimplemented packet
                 _ => {

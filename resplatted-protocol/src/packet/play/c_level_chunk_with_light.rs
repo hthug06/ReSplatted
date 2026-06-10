@@ -2,7 +2,7 @@ use crate::io::read::MinecraftReadExt;
 use crate::packet::PacketRead;
 use crate::types::block_entity::BlockEntity;
 use crate::types::chunk_section::ChunkSection;
-use crate::types::height_map::Heightmaps;
+use crate::types::height_map::Heightmap;
 use std::io::{Cursor, Read};
 
 #[derive(Debug)]
@@ -10,7 +10,7 @@ use std::io::{Cursor, Read};
 pub struct LevelChunkWithLightPacket {
     pub x: i32,
     pub z: i32,
-    pub heightmaps: Heightmaps,
+    pub height_map: Heightmap,
     pub chunk_data: Vec<ChunkSection>,
     pub block_entities: Vec<BlockEntity>,
 }
@@ -25,7 +25,7 @@ impl PacketRead for LevelChunkWithLightPacket {
         let x = cursor.read_i32()?;
         let z = cursor.read_i32()?;
 
-        let heightmaps = Heightmaps::read(cursor)?;
+        let heightmaps = Heightmap::read(cursor)?;
 
         // DATA aka array of chunk section
         // The array is not prefixed
@@ -56,7 +56,7 @@ impl PacketRead for LevelChunkWithLightPacket {
         Ok(Self {
             x,
             z,
-            heightmaps,
+            height_map: heightmaps,
             chunk_data,
             block_entities,
         })
