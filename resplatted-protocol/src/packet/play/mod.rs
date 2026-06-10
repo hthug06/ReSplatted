@@ -1,5 +1,6 @@
 pub mod c_disconnect;
 pub mod c_keep_alive;
+pub mod c_level_chunk_with_light;
 pub mod c_sync_player_pos;
 pub mod s_accept_teleportation;
 pub mod s_chat_message;

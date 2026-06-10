@@ -1,7 +1,8 @@
 use crate::client::core::MinecraftClient;
-use log::debug;
+use log::{debug, info};
 use rand::RngExt;
 use rand::rngs::SmallRng;
+use resplatted_protocol::packet::play::c_level_chunk_with_light::LevelChunkWithLightPacket;
 use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
 use resplatted_protocol::packet::play::s_move_player_rot::MovePlayerRotPacket;
 use resplatted_protocol::packet::{
@@ -88,7 +89,21 @@ impl MinecraftClient {
                         })
                         .await?;
                 }
-
+                LevelChunkWithLightPacket::ID => {
+                    /*  info!(
+                        "Received Level Chunk With Light packet with payload size: {} bytes",
+                        raw_packet.payload.len()
+                    );*/
+                    let packet =
+                        LevelChunkWithLightPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                    info!(
+                        "Fully read chunk data for chunk ({}, {}), with {} blocks and {} liquid blocks",
+                        packet.x,
+                        packet.z,
+                        packet.chunk_data[0].block_count,
+                        packet.chunk_data[0].liquid_count
+                    );
+                }
                 // Error on the network or unimplemented packet
                 _ => {
                     // If we want, we can stop the program here on an unimplemented packet.
