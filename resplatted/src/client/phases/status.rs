@@ -1,6 +1,7 @@
 use crate::client::core::MinecraftClient;
 use base64::Engine;
 use colored::{ColoredString, Colorize};
+use resplatted_protocol::io::{ConnectionContext, ProtocolState, ProtocolVersion};
 use resplatted_protocol::packet::{
     PacketRead,
     status::{
@@ -101,16 +102,27 @@ fn save_favicon(base64_string: &str, server_name: &str) -> std::io::Result<Strin
 
 impl MinecraftClient {
     /// handle the status response packet and display the information in the console
-    pub async fn fetch_and_display_status(&mut self, target_ip: &str) -> std::io::Result<()> {
+    pub async fn fetch_and_display_status(
+        &mut self,
+        target_ip: &str,
+    ) -> std::io::Result<Option<ProtocolVersion>> {
+        // We need to define a connection context at first
+        let context = ConnectionContext {
+            state: ProtocolState::Handshake,
+            version: ProtocolVersion::V26_1,
+        };
+
         // Send status request
         let status_request = StatusRequestPacket;
-        self.writer.write_and_send_packet(&status_request).await?;
+        self.writer
+            .write_and_send_packet(&status_request, &context)
+            .await?;
 
         // Get the json
         let raw_packet = self.reader.read_packet().await?;
-        if raw_packet.id == StatusResponsePacket::ID {
+        let protocol_version = if raw_packet.id == StatusResponsePacket::id(&context) {
             let mut cursor = Cursor::new(raw_packet.payload.as_slice());
-            let response = StatusResponsePacket::read(&mut cursor)?;
+            let response = StatusResponsePacket::read(&mut cursor, &context)?;
 
             // JSON from the response of the packet
             let parsed: serde_json::Value =
@@ -121,7 +133,7 @@ impl MinecraftClient {
             println!("==============================================");
 
             // Version
-            if let Some(version) = parsed.get("version") {
+            let protocol_version: ProtocolVersion = if let Some(version) = parsed.get("version") {
                 let name = version
                     .get("name")
                     .and_then(|v| v.as_str())
@@ -132,7 +144,11 @@ impl MinecraftClient {
                     .map(|p| p.to_string())
                     .unwrap_or("Unknown".to_string());
                 println!("📌 Version : {} (Protocol version : {})", name, protocol);
-            }
+                ProtocolVersion::from_protocol_version(protocol.parse::<i32>().unwrap_or(0))
+            } else {
+                println!("📌 Version : Unknown");
+                ProtocolVersion::V26_1
+            };
 
             // Player (online and max)
             if let Some(players) = parsed.get("players") {
@@ -178,22 +194,29 @@ impl MinecraftClient {
                 }
             }
             println!("==============================================\n");
-        }
+            Some(protocol_version)
+        } else {
+            println!("Failed to fetch status");
+            None
+        };
 
         let ping_payload = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as i64;
         self.writer
-            .write_and_send_packet(&PingRequestPacket {
-                timestamp: ping_payload,
-            })
+            .write_and_send_packet(
+                &PingRequestPacket {
+                    timestamp: ping_payload,
+                },
+                &context,
+            )
             .await?;
 
         let raw_pong = self.reader.read_packet().await?;
-        if raw_pong.id == PongResponsePacket::ID {
+        if raw_pong.id == PongResponsePacket::id(&context) {
             let mut cursor = Cursor::new(raw_pong.payload.as_slice());
-            let pong = PongResponsePacket::read(&mut cursor)?;
+            let pong = PongResponsePacket::read(&mut cursor, &context)?;
             let current_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -201,6 +224,6 @@ impl MinecraftClient {
             println!("⚡ Latency  : {} ms\n", current_time - pong.timestamp);
         }
 
-        Ok(())
+        Ok(protocol_version)
     }
 }

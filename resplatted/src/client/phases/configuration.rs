@@ -1,16 +1,17 @@
-use crate::client::{core::MinecraftClient, state::ProtocolState};
+use crate::client::core::MinecraftClient;
 use log::debug;
+use resplatted_protocol::io::ProtocolState;
+use resplatted_protocol::packet::common::c_disconnect::DisconnectPacket;
+use resplatted_protocol::packet::common::c_keep_alive::CKeepAlivePacket;
+use resplatted_protocol::packet::common::s_keep_alive::SKeepAlivePacket;
 use resplatted_protocol::{
     io::read::MinecraftReadExt,
     packet::{
         PacketRead,
         configuration::{
-            c_disconnect::ConfigurationDisconnectPacket,
-            c_finish_configuration::CFinishConfigurationPacket,
-            c_keep_alive::CConfigurationKeepAlivePacket, c_know_pack::CKnownPackPacket,
+            c_finish_configuration::CFinishConfigurationPacket, c_know_pack::CKnownPackPacket,
             c_plugin_message::PluginMessagePacket, s_client_information::ClientInformationPacket,
-            s_finish_configuration::SFinishConfigurationPacket,
-            s_keep_alive::SConfigurationKeepAlivePacket, s_known_pack::SKnownPackPacket,
+            s_finish_configuration::SFinishConfigurationPacket, s_known_pack::SKnownPackPacket,
         },
     },
 };
@@ -18,10 +19,10 @@ use std::io::{Cursor, Error, ErrorKind};
 
 impl MinecraftClient {
     /// Handle configuration phase between the client and the server
-    pub async fn configuration(&mut self) -> std::io::Result<ProtocolState> {
+    pub async fn configuration(&mut self) -> std::io::Result<()> {
         // Send the client information packet
         self.writer
-            .write_and_send_packet(&ClientInformationPacket::default())
+            .write_and_send_packet(&ClientInformationPacket::default(), &self.context)
             .await?;
 
         // read loop
@@ -32,8 +33,11 @@ impl MinecraftClient {
             // Match the packet id to know what packet we need to handle
             match raw_packet.id {
                 // Custom payload, not very interesting
-                PluginMessagePacket::ID => {
-                    let packet = PluginMessagePacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                id if id == PluginMessagePacket::id(&self.context) => {
+                    let packet = PluginMessagePacket::read(
+                        &mut Cursor::new(&raw_packet.payload),
+                        &self.context,
+                    )?;
 
                     if packet.channel == "minecraft:brand" {
                         let mut cursor = Cursor::new(&packet.data);
@@ -43,9 +47,11 @@ impl MinecraftClient {
                     }
                 }
                 // Disconnect Packet
-                ConfigurationDisconnectPacket::ID => {
-                    let packet =
-                        ConfigurationDisconnectPacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                id if id == DisconnectPacket::id(&self.context) => {
+                    let packet = DisconnectPacket::read(
+                        &mut Cursor::new(&raw_packet.payload),
+                        &self.context,
+                    )?;
                     return Err(Error::new(
                         ErrorKind::ConnectionAborted,
                         format!(
@@ -54,28 +60,33 @@ impl MinecraftClient {
                         ),
                     ));
                 }
-                CFinishConfigurationPacket::ID => {
+                id if id == CFinishConfigurationPacket::id(&self.context) => {
                     debug!(
                         "Received Finish Configuration packet. Replying with Acknowledge Finish Configuration Packet"
                     );
                     // Need to answer the pack we already have on the disk (none)
                     self.writer
-                        .write_and_send_packet(&SFinishConfigurationPacket)
+                        .write_and_send_packet(&SFinishConfigurationPacket, &self.context)
                         .await?;
 
-                    return Ok(ProtocolState::Play);
+                    self.context.state = ProtocolState::Play;
+                    return Ok(());
                 }
-                CConfigurationKeepAlivePacket::ID => {
-                    let packet =
-                        CConfigurationKeepAlivePacket::read(&mut Cursor::new(&raw_packet.payload))?;
+                id if id == CKeepAlivePacket::id(&self.context) => {
+                    let packet = CKeepAlivePacket::read(
+                        &mut Cursor::new(&raw_packet.payload),
+                        &self.context,
+                    )?;
                     self.writer
-                        .write_and_send_packet(&SConfigurationKeepAlivePacket { id: packet.id })
+                        .write_and_send_packet(&SKeepAlivePacket { id: packet.id }, &self.context)
                         .await?;
                 }
-                CKnownPackPacket::ID => {
+                id if id == CKnownPackPacket::id(&self.context) => {
                     debug!("Received Select Know Pack packet. Replying with Know Pack Packet");
                     // Need to answer the pack we already have on the disk (none)
-                    self.writer.write_and_send_packet(&SKnownPackPacket).await?;
+                    self.writer
+                        .write_and_send_packet(&SKnownPackPacket, &self.context)
+                        .await?;
                 }
                 // Error on the network or unimplemented packet
                 _ => {

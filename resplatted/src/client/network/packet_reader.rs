@@ -5,11 +5,11 @@ use tokio::io::{AsyncReadExt, BufReader};
 use tokio::net::tcp::OwnedReadHalf;
 
 /// Used to resize the buffer when the packet size is too big
-/// For now, a bot stand and do nothing, so when it's connected, it will only received
-/// packet like the movement packet. After spawning in the world, buffers are going to
-/// be reallocated like 10 time and that all. I think that okay.
+/// For now, a bot stands and does nothing, so when it's connected, it will only receive
+/// packets like the movement packet. After spawning in the world, buffers are going to
+/// be reallocated like 10 times and that all. I think that is okay.
 ///
-/// Later, if the bot diversify, update the MAX_BUFFER_CAPACITY.
+/// Later, if the bot diversifies, update the MAX_BUFFER_CAPACITY.
 const MAX_BUFFER_CAPACITY: usize = 1_024; // 1 Ko, can be changed
 
 /// The packet reader struct contain everything needed to read a packet,

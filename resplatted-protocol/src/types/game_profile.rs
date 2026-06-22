@@ -1,4 +1,6 @@
-use crate::io::{read::MinecraftReadExt, write::MinecraftWriteExt};
+use crate::io::{
+    ConnectionContext, ProtocolVersion, read::MinecraftReadExt, write::MinecraftWriteExt,
+};
 use std::io::{Error, Read};
 use uuid::Uuid;
 
@@ -9,6 +11,8 @@ pub struct GameProfile {
     pub uuid: Uuid,
     pub username: String,
     pub properties: Vec<GameProfileProperties>,
+    /// Only used in protocol version 767 (1.21 - 1.21.1)
+    pub strict_error_handling: Option<bool>,
 }
 
 #[derive(Debug)]
@@ -20,7 +24,7 @@ pub struct GameProfileProperties {
 
 impl GameProfile {
     /// Read a GameProfile from flux
-    pub fn read<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    pub fn read<R: Read>(reader: &mut R, ctx: &ConnectionContext) -> Result<Self, Error> {
         // first the Uuid
         let mut uuid_bytes = [0u8; 16];
         reader.read_exact(&mut uuid_bytes)?;
@@ -70,10 +74,17 @@ impl GameProfile {
             });
         }
 
+        let strict_error_handling = if ctx.version == ProtocolVersion::V1_21_1 {
+            Some(reader.read_bool()?)
+        } else {
+            None
+        };
+
         Ok(Self {
             uuid,
             username,
             properties,
+            strict_error_handling,
         })
     }
 

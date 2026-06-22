@@ -1,14 +1,26 @@
+use crate::io::{ConnectionContext, ProtocolState, ProtocolVersion};
 use crate::packet::PacketRead;
 use fastnbt::Value;
 use std::io::{Cursor, Read};
-pub struct PlayDisconnectPacket {
+
+pub struct DisconnectPacket {
     pub reason: String,
 }
 
-impl PacketRead for PlayDisconnectPacket {
-    const ID: i32 = 0x20;
+impl PacketRead for DisconnectPacket {
+    fn id(ctx: &ConnectionContext) -> i32 {
+        match ctx.state {
+            ProtocolState::Login => 0x00,
+            ProtocolState::Configuration => 0x2,
+            ProtocolState::Play => match ctx.version {
+                ProtocolVersion::V1_21_1 => 0x1d,
+                ProtocolVersion::V26_1 => 0x20,
+            },
+            _ => unreachable!("Invalid State for disconnect packet: {:?}", ctx.state),
+        }
+    }
 
-    fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+    fn read(cursor: &mut Cursor<&[u8]>, _ctx: &ConnectionContext) -> std::io::Result<Self> {
         let mut buf: Vec<u8> = Vec::new();
         cursor.read_to_end(&mut buf)?;
 

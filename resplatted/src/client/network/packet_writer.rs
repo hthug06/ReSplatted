@@ -1,4 +1,5 @@
 use flate2::{Compression, write::ZlibEncoder};
+use resplatted_protocol::io::ConnectionContext;
 use resplatted_protocol::{
     io::write::MinecraftWriteExt,
     packet::{PacketWrite, encode_packet},
@@ -23,9 +24,10 @@ impl PacketWriter {
     pub async fn write_and_send_packet<P: PacketWrite>(
         &mut self,
         packet: &P,
+        ctx: &ConnectionContext,
     ) -> std::io::Result<()> {
         // encode ID + DATA
-        encode_packet(packet, &mut self.raw_payload_buffer)?;
+        encode_packet(packet, &mut self.raw_payload_buffer, ctx)?;
 
         // Compress here before the final buffer, so if the compression fail no ram is allocated
         compress_payload(

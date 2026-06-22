@@ -1,9 +1,11 @@
+pub mod common;
 pub mod configuration;
 pub mod handshake;
 pub mod login;
 pub mod play;
 pub mod status;
 
+use crate::io::ConnectionContext;
 use crate::io::write::MinecraftWriteExt;
 use std::io::Cursor;
 
@@ -16,28 +18,36 @@ pub struct RawPacket {
 /// Trait for reading the packet.
 /// Server -> Client
 pub trait PacketRead: Sized {
-    const ID: i32;
+    /// The packet ID
+    /// This can change depending on the client version
+    fn id(ctx: &ConnectionContext) -> i32;
     /// Read the packet data from the buffer
-    fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self>;
+    fn read(cursor: &mut Cursor<&[u8]>, ctx: &ConnectionContext) -> std::io::Result<Self>;
 }
 
 /// Trait for writing the packet
 /// Client -> Server
 pub trait PacketWrite {
-    const ID: i32;
+    /// The packet ID
+    /// This can change depending on the client version
+    fn id(ctx: &ConnectionContext) -> i32;
     /// Write the packet into the buffer
-    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()>;
+    fn write(&self, buf: &mut Vec<u8>, ctx: &ConnectionContext) -> std::io::Result<()>;
 }
 
 /// Encode a packet into a BytesMut Buffer (ID + DATA)
-pub fn encode_packet<P: PacketWrite>(packet: &P, buf: &mut Vec<u8>) -> std::io::Result<()> {
+pub fn encode_packet<P: PacketWrite>(
+    packet: &P,
+    buf: &mut Vec<u8>,
+    ctx: &ConnectionContext,
+) -> std::io::Result<()> {
     buf.clear();
 
     // ID
-    buf.write_var_int(P::ID);
+    buf.write_var_int(P::id(ctx));
 
     // Then DATA
-    packet.write(buf)?;
+    packet.write(buf, ctx)?;
 
     Ok(())
 }

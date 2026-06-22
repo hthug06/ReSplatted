@@ -1,4 +1,5 @@
 use crate::io::write::MinecraftWriteExt;
+use crate::io::{ConnectionContext, ProtocolVersion};
 use crate::packet::PacketWrite;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -9,9 +10,14 @@ pub struct ChatMessagePacket {
 }
 
 impl PacketWrite for ChatMessagePacket {
-    const ID: i32 = 0x09;
+    fn id(ctx: &ConnectionContext) -> i32 {
+        match ctx.version {
+            ProtocolVersion::V1_21_1 => 0x05,
+            ProtocolVersion::V26_1 => 0x09,
+        }
+    }
 
-    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>, ctx: &ConnectionContext) -> std::io::Result<()> {
         // Message (max 256 char)
         buf.write_string(&self.message)?;
 
@@ -30,26 +36,38 @@ impl PacketWrite for ChatMessagePacket {
         // Else, just uncomment the rand::... and delete the 0
         buf.write_primitive_type(0i64 /*rand::random::<i64>()*/);
 
-        // Signature (Prefixed Optional Byte Array)
-        // because its prefixed optional, if we put 0, the server will just skip this
-        buf.write_primitive_type(0u8);
+        if ctx.version == ProtocolVersion::V26_1 {
+            // Signature (Prefixed Optional Byte Array)
+            // because its prefixed optional, if we put 0, the server will just skip this
+            buf.write_primitive_type(0u8);
 
-        // Message Count (VarInt)
-        // The number of message the bot sent from the start. Can be 0, nothing will change
-        buf.write_var_int(0);
+            // Message Count (VarInt)
+            // The number of message the bot sent from the start. Can be 0, nothing will change
+            buf.write_var_int(0);
 
-        // Acknowledged (Fixed BitSet 20)
-        // A 20-bit BitSet allows the client to confirm that it has seen the last 20 chat messages.
-        // 20 bits fit into exactly 3 bytes (3 * 8 = 24 bits).
-        // We send 3 empty bytes to indicate that we have seen 0 messages.
-        buf.extend_from_slice(&[0x00, 0x00, 0x00]);
+            // Acknowledged (Fixed BitSet 20)
+            // A 20-bit BitSet allows the client to confirm that it has seen the last 20 chat messages.
+            // 20 bits fit into exactly 3 bytes (3 * 8 = 24 bits).
+            // We send 3 empty bytes to indicate that we have seen 0 messages.
+            buf.extend_from_slice(&[0x00, 0x00, 0x00]);
 
-        // Checksum
-        // From the wiki :
-        // Checksum is computed over all the message signature checksums in the last seen set, from oldest to newest.
-        // Both the packet checksum and signature checksums use the same logic as Java's Arrays.hashCode(byte[]) implementation.
-        // The packet checksum additionally casts the resulting int to a byte, and if that byte is 0 returns 1, otherwise returns said byte
-        buf.write_primitive_type(0u8);
+            // Checksum
+            // From the wiki :
+            // Checksum is computed over all the message signature checksums in the last seen set, from oldest to newest.
+            // Both the packet checksum and signature checksums use the same logic as Java's Arrays.hashCode(byte[]) implementation.
+            // The packet checksum additionally casts the resulting int to a byte, and if that byte is 0 returns 1, otherwise returns said byte
+            buf.write_primitive_type(0u8);
+        }
+        // 1.21.1
+        else {
+            // Argument signature length (VarInt)
+            // After this, there is the argument signature argument, but because the size of the array is 0, there is no argument signature
+            buf.write_var_int(0);
+
+            // Message Count (VarInt)
+            // The number of messages the bot sent from the start. Can be 0, nothing will change
+            buf.write_var_int(0);
+        }
 
         Ok(())
     }

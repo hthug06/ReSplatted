@@ -1,4 +1,5 @@
 use crate::io::write::MinecraftWriteExt;
+use crate::io::{ConnectionContext, ProtocolVersion};
 use crate::packet::PacketWrite;
 
 /// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Client_Information_(configuration)
@@ -51,9 +52,12 @@ impl Default for ClientInformationPacket {
 }
 
 impl PacketWrite for ClientInformationPacket {
-    const ID: i32 = 0x00;
+    fn id(_ctx: &ConnectionContext) -> i32 {
+        // Same for all versions
+        0x00
+    }
 
-    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>, ctx: &ConnectionContext) -> std::io::Result<()> {
         buf.write_string(self.locale.as_str())?;
         buf.write_primitive_type(self.view_distance);
         buf.write_var_int(self.chat_mode as i32);
@@ -62,7 +66,11 @@ impl PacketWrite for ClientInformationPacket {
         buf.write_var_int(self.main_hand as i32);
         buf.write_primitive_type(self.enable_text_filtering);
         buf.write_primitive_type(self.allow_server_listing);
-        buf.write_var_int(self.particles_status as i32);
+        // Particles status is in 26.1 +
+        if ctx.version == ProtocolVersion::V26_1 {
+            buf.write_var_int(self.particles_status as i32);
+        }
+
         Ok(())
     }
 }

@@ -1,7 +1,5 @@
-use crate::client::{
-    network::{packet_reader::PacketReader, packet_writer::PacketWriter},
-    state::ProtocolState,
-};
+use crate::client::network::{packet_reader::PacketReader, packet_writer::PacketWriter};
+use resplatted_protocol::io::{ConnectionContext, ProtocolState, ProtocolVersion};
 use resplatted_protocol::packet::handshake::{HandshakeNextState, HandshakePacket};
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
@@ -9,7 +7,7 @@ use tokio::net::TcpStream;
 pub struct MinecraftClient {
     pub reader: PacketReader,
     pub writer: PacketWriter,
-    pub state: ProtocolState,
+    pub context: ConnectionContext,
 }
 
 impl MinecraftClient {
@@ -32,7 +30,10 @@ impl MinecraftClient {
                 compress_buffer: Vec::with_capacity(32), // Not be more than 32 bytes (ex: connecting to
                 final_buffer: Vec::with_capacity(32),    // hypixel is 22 bytes)
             },
-            state: ProtocolState::Handshake,
+            context: ConnectionContext {
+                state: ProtocolState::Handshake,
+                version: ProtocolVersion::V26_1, // Base, can be changed later
+            },
         })
     }
 
@@ -61,16 +62,18 @@ impl MinecraftClient {
         };
 
         let handshake = HandshakePacket {
-            protocol_version: 775, // 26.1.2
+            protocol_version: self.context.version, // 26.1.2
             server_address: target_ip.to_string(),
             server_port: port,
             next_state: state_int,
         };
 
-        self.writer.write_and_send_packet(&handshake).await?;
+        self.writer
+            .write_and_send_packet(&handshake, &self.context)
+            .await?;
 
         // Update the state
-        self.state = next_state;
+        self.context.state = next_state;
         Ok(())
     }
 }

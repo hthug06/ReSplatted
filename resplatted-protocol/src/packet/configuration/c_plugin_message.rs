@@ -1,3 +1,4 @@
+use crate::io::ConnectionContext;
 use crate::io::read::MinecraftReadExt;
 use crate::packet::PacketRead;
 use std::io::{Cursor, Read};
@@ -9,9 +10,12 @@ pub struct PluginMessagePacket {
 }
 
 impl PacketRead for PluginMessagePacket {
-    const ID: i32 = 0x01;
+    fn id(_ctx: &ConnectionContext) -> i32 {
+        // Same for all versions
+        0x01
+    }
 
-    fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+    fn read(cursor: &mut Cursor<&[u8]>, _ctx: &ConnectionContext) -> std::io::Result<Self> {
         // Read the channel
         let channel = cursor.read_string()?;
 

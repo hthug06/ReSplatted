@@ -7,6 +7,7 @@ pub trait MinecraftReadExt {
     fn read_var_int(&mut self) -> std::io::Result<i32>;
     /// Read an utf-8 String
     fn read_string(&mut self) -> std::io::Result<String>;
+    fn read_bool(&mut self) -> std::io::Result<bool>;
     /// Read an u16.
     /// Same as i16, but without the & 65536
     fn read_u16(&mut self) -> std::io::Result<u16>;
@@ -68,6 +69,12 @@ impl<R: Read> MinecraftReadExt for R {
         self.read_exact(&mut bytes)?;
 
         String::from_utf8(bytes).map_err(|e| Error::new(ErrorKind::InvalidData, e.to_string()))
+    }
+
+    fn read_bool(&mut self) -> std::io::Result<bool> {
+        let mut buf = [0u8; 1];
+        self.read_exact(&mut buf)?;
+        Ok(buf[0] == 1)
     }
 
     fn read_u16(&mut self) -> std::io::Result<u16> {

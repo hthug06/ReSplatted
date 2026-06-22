@@ -1,7 +1,8 @@
 use crate::cli::{Args, WaitingMode};
-use crate::client::{core::MinecraftClient, state::ProtocolState};
+use crate::client::core::MinecraftClient;
 use clap::Parser;
 use log::{LevelFilter, info, warn};
+use resplatted_protocol::io::ProtocolState;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::io::Error;
 use std::process::exit;
@@ -18,7 +19,7 @@ async fn main() -> Result<(), Error> {
     // First of all init log
     // Start log
     TermLogger::init(
-        LevelFilter::Info, // Use LevelFilter::Debug for debugging (LOL)
+        LevelFilter::Debug, // Use LevelFilter::Debug for debugging (LOL)
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -63,7 +64,7 @@ async fn main() -> Result<(), Error> {
                 // Bot 0 wait 0ms, Bot 2 wait 50ms, Bot 3 attend 100ms...
                 WaitingMode::Linear => i as u64 * args.wait,
 
-                // Static: EVERY bot wait the samt time and connect at the same time after this delay
+                // Static: EVERY bot wait the same time and connect at the same time after this delay
                 WaitingMode::Static => args.wait,
 
                 // Random: Each bot wait a random time before connecting
@@ -77,7 +78,12 @@ async fn main() -> Result<(), Error> {
             };
 
             // Set the name here, used one in function but more simple for logs
-            let bot_name = format!("{}_{}", args.name, i);
+            let bot_name = if args.bot_number == 1 {
+                args.name.clone()
+            } else {
+                format!("{}{}", args.name, i)
+            };
+
             let target_ptr = Arc::clone(&target);
 
             // For log

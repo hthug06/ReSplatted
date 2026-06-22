@@ -1,3 +1,4 @@
+use crate::io::ConnectionContext;
 use crate::packet::PacketRead;
 use crate::types::game_profile::GameProfile;
 use std::io::Cursor;
@@ -8,11 +9,14 @@ pub struct LoginSuccessPacket {
 }
 
 impl PacketRead for LoginSuccessPacket {
-    const ID: i32 = 0x02;
+    fn id(_ctx: &ConnectionContext) -> i32 {
+        // Same for all versions
+        0x02
+    }
 
-    fn read(cursor: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+    fn read(cursor: &mut Cursor<&[u8]>, ctx: &ConnectionContext) -> std::io::Result<Self> {
         Ok(Self {
-            game_profile: GameProfile::read(cursor)?,
+            game_profile: GameProfile::read(cursor, ctx)?,
         })
     }
 }

@@ -1,3 +1,4 @@
+use crate::io::ConnectionContext;
 use crate::io::write::MinecraftWriteExt;
 use crate::packet::PacketWrite;
 use uuid::Uuid;
@@ -16,9 +17,11 @@ impl LoginStartPacket {
     }
 }
 impl PacketWrite for LoginStartPacket {
-    const ID: i32 = 0x00;
+    fn id(_ctx: &ConnectionContext) -> i32 {
+        0x00
+    }
 
-    fn write(&self, buf: &mut Vec<u8>) -> std::io::Result<()> {
+    fn write(&self, buf: &mut Vec<u8>, _ctx: &ConnectionContext) -> std::io::Result<()> {
         buf.write_string(&self.username)?;
         buf.write_uuid(self.uuid);
 
