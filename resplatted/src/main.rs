@@ -2,7 +2,7 @@ use crate::cli::{Args, WaitingMode};
 use crate::client::core::MinecraftClient;
 use clap::Parser;
 use log::{LevelFilter, info, warn};
-use resplatted_protocol::io::ProtocolState;
+use resplatted_protocol::io::{ProtocolState, ProtocolVersion};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 use std::io::Error;
 use std::process::exit;
@@ -36,19 +36,26 @@ async fn main() -> Result<(), Error> {
     let port = args.port;
     info!("Connecting to {}:{}...", target, port);
 
-    if args.status {
-        // Create a new client and Init the tcp connection
-        let mut client = MinecraftClient::connect(&target, port).await?;
+    // Here, we can get the status + the protocol version to auto-adapt to the server
+    // Create a new client and Init the tcp connection
+    let mut client = MinecraftClient::connect(&target, port).await?;
 
-        // Status state
-        client
-            .handshake(&target, port, ProtocolState::Status)
-            .await?;
+    // Status state
+    client
+        .handshake(&target, port, ProtocolState::Status)
+        .await?;
 
-        // fetch the status from the server
-        client.fetch_and_display_status(&target).await?;
+    // fetch the status from the server + the protocol version
+    let raw_protocol_version = client.fetch_and_display_status(&target).await?.unwrap();
+    let protocol_version = if args.protocol != -1 {
+        ProtocolVersion::from_protocol_version(args.protocol)
     } else {
-        // All the bots task
+        ProtocolVersion::from_protocol_version(raw_protocol_version)
+    };
+    info!("Fetched protocol version : {:?}", protocol_version);
+
+    if !args.status {
+        // All the bot tasks
         let mut bot_tasks = Vec::new();
 
         // For logs

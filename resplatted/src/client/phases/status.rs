@@ -105,7 +105,7 @@ impl MinecraftClient {
     pub async fn fetch_and_display_status(
         &mut self,
         target_ip: &str,
-    ) -> std::io::Result<Option<ProtocolVersion>> {
+    ) -> std::io::Result<Option<i32>> {
         // We need to define a connection context at first
         let context = ConnectionContext {
             state: ProtocolState::Handshake,
@@ -133,7 +133,7 @@ impl MinecraftClient {
             println!("==============================================");
 
             // Version
-            let protocol_version: ProtocolVersion = if let Some(version) = parsed.get("version") {
+            let protocol_version = if let Some(version) = parsed.get("version") {
                 let name = version
                     .get("name")
                     .and_then(|v| v.as_str())
@@ -144,10 +144,10 @@ impl MinecraftClient {
                     .map(|p| p.to_string())
                     .unwrap_or("Unknown".to_string());
                 println!("📌 Version : {} (Protocol version : {})", name, protocol);
-                ProtocolVersion::from_protocol_version(protocol.parse::<i32>().unwrap_or(0))
+                protocol.parse::<i32>().unwrap_or(0)
             } else {
                 println!("📌 Version : Unknown");
-                ProtocolVersion::V26_1
+                ProtocolVersion::V26_1 as i32
             };
 
             // Player (online and max)

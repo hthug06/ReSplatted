@@ -26,6 +26,12 @@ pub struct Args {
     pub port: u16,
 
     #[clap(
+        help = "The protocol version of the server. If not specified, it will be auto-detected."
+    )]
+    #[arg(long, default_value_t = -1)]
+    pub protocol: i32,
+
+    #[clap(
         help = "if true, display the infos about the minecraft server (like in the multiplayer list of a minecraft client)"
     )]
     #[arg(long, short, default_value_t = false)]
