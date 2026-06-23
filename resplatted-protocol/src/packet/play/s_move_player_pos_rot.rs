@@ -28,7 +28,7 @@ impl PacketWrite for MovePlayerPosRotPacket {
         buf.write_primitive_type(self.pitch);
         match ctx.version {
             // Only the onGround is used in 1.21.1 (bool)
-            ProtocolVersion::V1_21_1 => buf.write_primitive_type(self.flags & 0x01),
+            ProtocolVersion::V1_21_1 => buf.write_primitive_type((self.flags & 0x01) != 0),
             ProtocolVersion::V26_1 => buf.write_primitive_type(self.flags),
         }
         Ok(())

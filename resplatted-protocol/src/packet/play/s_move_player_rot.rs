@@ -12,7 +12,7 @@ pub struct MovePlayerRotPacket {
 impl PacketWrite for MovePlayerRotPacket {
     fn id(ctx: &ConnectionContext) -> i32 {
         match ctx.version {
-            ProtocolVersion::V1_21_1 => 0x1A,
+            ProtocolVersion::V1_21_1 => 0x1C,
             ProtocolVersion::V26_1 => 0x20,
         }
     }
@@ -22,7 +22,7 @@ impl PacketWrite for MovePlayerRotPacket {
         buf.write_primitive_type(self.pitch);
         match ctx.version {
             // Only the onGround is used in 1.21.1 (bool)
-            ProtocolVersion::V1_21_1 => buf.write_primitive_type(self.flags & 0x01),
+            ProtocolVersion::V1_21_1 => buf.write_primitive_type((self.flags & 0x01) != 0),
             ProtocolVersion::V26_1 => buf.write_primitive_type(self.flags),
         }
         Ok(())
