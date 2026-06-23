@@ -12,7 +12,11 @@ pub struct MinecraftClient {
 
 impl MinecraftClient {
     /// Create the TCP Connexion
-    pub async fn connect(target: &str, port: u16) -> std::io::Result<Self> {
+    pub async fn connect(
+        target: &str,
+        port: u16,
+        protocol_version: ProtocolVersion,
+    ) -> std::io::Result<Self> {
         let stream = TcpStream::connect(format!("{}:{}", target, port)).await?;
         let (read_half, write_half) = stream.into_split();
 
@@ -32,7 +36,7 @@ impl MinecraftClient {
             },
             context: ConnectionContext {
                 state: ProtocolState::Handshake,
-                version: ProtocolVersion::V26_1, // Base, can be changed later
+                version: protocol_version,
             },
         })
     }

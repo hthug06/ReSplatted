@@ -56,8 +56,8 @@ impl PacketRead for SyncPlayerPos {
 
         // 1.21.1, last
         let teleport_id = match teleport_id_early {
-            Some(id) => id,                 // On l'avait déjà lu au début
-            None => cursor.read_var_int()?, // On le lit à la fin pour la 1.21.1
+            Some(id) => id,
+            None => cursor.read_var_int()?,
         };
 
         Ok(Self {

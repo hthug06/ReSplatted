@@ -24,10 +24,7 @@ impl PacketWrite for HandshakePacket {
         0x00
     }
 
-    fn write(&self, buf: &mut Vec<u8>, ctx: &ConnectionContext) -> std::io::Result<()> {
-        if ctx.version == V1_21_1 {
-            unimplemented!("Handshake packet is not implemented for protocol version 1.21.1");
-        }
+    fn write(&self, buf: &mut Vec<u8>, _ctx: &ConnectionContext) -> std::io::Result<()> {
         buf.write_var_int(self.protocol_version as i32);
         buf.write_string(&self.server_address)?;
         buf.write_primitive_type(self.server_port);

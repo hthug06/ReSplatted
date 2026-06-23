@@ -38,7 +38,7 @@ async fn main() -> Result<(), Error> {
 
     // Here, we can get the status + the protocol version to auto-adapt to the server
     // Create a new client and Init the tcp connection
-    let mut client = MinecraftClient::connect(&target, port).await?;
+    let mut client = MinecraftClient::connect(&target, port, ProtocolVersion::V26_1).await?;
 
     // Status state
     client
@@ -52,9 +52,10 @@ async fn main() -> Result<(), Error> {
     } else {
         ProtocolVersion::from_protocol_version(raw_protocol_version)
     };
-    info!("Fetched protocol version : {:?}", protocol_version);
 
     if !args.status {
+        info!("Fetched protocol version : {:?}", protocol_version);
+
         // All the bot tasks
         let mut bot_tasks = Vec::new();
 
@@ -113,13 +114,14 @@ async fn main() -> Result<(), Error> {
                     }
                 }
 
-                let mut client = match MinecraftClient::connect(&target_ptr, port).await {
-                    Ok(c) => c,
-                    Err(e) => {
-                        log::error!("[{}] Failed to connect: {}", bot_name, e);
-                        return; // Stop the background task
-                    }
-                };
+                let mut client =
+                    match MinecraftClient::connect(&target_ptr, port, protocol_version).await {
+                        Ok(c) => c,
+                        Err(e) => {
+                            log::error!("[{}] Failed to connect: {}", bot_name, e);
+                            return; // Stop the background task
+                        }
+                    };
 
                 // Handshake
                 if let Err(e) = client
