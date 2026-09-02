@@ -6,7 +6,7 @@ pub struct PlayerLoadedPacket;
 
 impl PacketWrite for PlayerLoadedPacket {
     fn id(ctx: &ConnectionContext) -> i32 {
-        if ctx.version == ProtocolVersion::V26_1 || ctx.version == ProtocolVersion::V26_2 {
+        if ctx.version >= ProtocolVersion::V26_1 {
             0x2B
         } else {
             unreachable!(

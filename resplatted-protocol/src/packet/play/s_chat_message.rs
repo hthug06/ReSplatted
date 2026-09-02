@@ -36,7 +36,7 @@ impl PacketWrite for ChatMessagePacket {
         // Else, just uncomment the rand::... and delete the 0
         buf.write_primitive_type(0i64 /*rand::random::<i64>()*/);
 
-        if ctx.version == ProtocolVersion::V26_1 {
+        if ctx.version >= ProtocolVersion::V26_1 {
             // Signature (Prefixed Optional Byte Array)
             // because its prefixed optional, if we put 0, the server will just skip this
             buf.write_primitive_type(0u8);

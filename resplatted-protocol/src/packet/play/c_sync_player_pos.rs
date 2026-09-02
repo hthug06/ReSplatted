@@ -37,7 +37,7 @@ impl PacketRead for SyncPlayerPos {
         let y = cursor.read_f64()?;
         let z = cursor.read_f64()?;
 
-        let (velocity_x, velocity_y, velocity_z) = if ctx.version == ProtocolVersion::V26_1 {
+        let (velocity_x, velocity_y, velocity_z) = if ctx.version >= ProtocolVersion::V26_1 {
             (
                 Some(cursor.read_f64()?),
                 Some(cursor.read_f64()?),

@@ -67,7 +67,7 @@ impl PacketWrite for ClientInformationPacket {
         buf.write_primitive_type(self.enable_text_filtering);
         buf.write_primitive_type(self.allow_server_listing);
         // Particles status is in 26.1 +
-        if ctx.version == ProtocolVersion::V26_1 || ctx.version == ProtocolVersion::V26_2{
+        if ctx.version >= ProtocolVersion::V26_1 {
             buf.write_var_int(self.particles_status as i32);
         }
 

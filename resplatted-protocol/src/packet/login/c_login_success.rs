@@ -22,7 +22,7 @@ impl PacketRead for LoginSuccessPacket {
         // read in order
         let game_profile = GameProfile::read(cursor, ctx)?;
 
-        let uuid = if matches!(ctx.version, ProtocolVersion::V26_2) {
+        let uuid = if ctx.version >= ProtocolVersion::V26_2 {
             Some(cursor.read_uuid()?)
         } else {
             None
