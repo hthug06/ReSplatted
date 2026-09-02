@@ -41,7 +41,7 @@ pub struct Args {
         help = "The base waiting time (in ms). Used differently depending on the waiting_mode."
     )]
     #[arg(long, short, default_value_t = 1)]
-    pub wait: u64,
+    pub wait: u32,
 
     #[clap(
         help = "Waiting mode between each bot connection: \n- Linear: delays each bot by (index * wait). \n- Static: every bot waits exactly 'wait' ms. \n- Random: every bot waits a random time between 0 and 'wait'.\n"

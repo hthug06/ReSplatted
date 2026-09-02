@@ -72,7 +72,7 @@ async fn main() -> Result<(), Error> {
             let delay_ms = match args.waiting_mode {
                 // Linear: Each bot wait a little bit more than the previous one
                 // Bot 0 wait 0ms, Bot 2 wait 50ms, Bot 3 attend 100ms...
-                WaitingMode::Linear => i as u64 * args.wait,
+                WaitingMode::Linear => i * args.wait,
 
                 // Static: EVERY bot wait the same time and connect at the same time after this delay
                 WaitingMode::Static => args.wait,
@@ -111,7 +111,7 @@ async fn main() -> Result<(), Error> {
                 // In the waiting, check if the program stopped
                 if delay_ms > 0 {
                     tokio::select! {
-                        _ = tokio::time::sleep(Duration::from_millis(delay_ms)) => {}
+                        _ = tokio::time::sleep(Duration::from_millis(delay_ms as u64)) => {}
                         _ = child_token.cancelled() => return,
                     }
                 }

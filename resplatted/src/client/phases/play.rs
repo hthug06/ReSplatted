@@ -96,12 +96,13 @@ impl MinecraftClient {
                             .await?;
                     }
 
+                    // TODO bot are kick for invalid movement
                     let mut rng: SmallRng = rand::make_rng();
                     self.writer
                         .write_and_send_packet(
                             &MovePlayerRotPacket {
-                                yaw: rng.random_range(-180.0..=180.0),
-                                pitch: rng.random_range(-90.0..=90.0),
+                                yaw: rng.random_range(-179.0..=179.0),
+                                pitch: rng.random_range(-89.0..=89.0),
                                 flags: 0x01,
                             },
                             &self.context,
