@@ -13,7 +13,7 @@ impl PacketRead for CKeepAlivePacket {
             ProtocolState::Configuration => 0x04,
             ProtocolState::Play => match ctx.version {
                 ProtocolVersion::V1_21_1 => 0x26,
-                ProtocolVersion::V26_1 => 0x2C,
+                ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => 0x2C,
             },
             _ => unreachable!(
                 "Invalid State for clientbound keep alive packet: {:?}",

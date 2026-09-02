@@ -14,7 +14,7 @@ impl PacketRead for DisconnectPacket {
             ProtocolState::Configuration => 0x2,
             ProtocolState::Play => match ctx.version {
                 ProtocolVersion::V1_21_1 => 0x1d,
-                ProtocolVersion::V26_1 => 0x20,
+                ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => 0x20,
             },
             _ => unreachable!("Invalid State for disconnect packet: {:?}", ctx.state),
         }

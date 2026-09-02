@@ -23,6 +23,8 @@ pub trait MinecraftReadExt {
 
     /// Read a f64 (double)
     fn read_f64(&mut self) -> std::io::Result<f64>;
+    /// Read a UUID
+    fn read_uuid(&mut self) -> std::io::Result<uuid::Uuid>;
 }
 
 /// Implement the MinecraftReadExt trait for any type that implements std::io::Read
@@ -105,6 +107,12 @@ impl<R: Read> MinecraftReadExt for R {
         let mut buf = [0u8; 8];
         self.read_exact(&mut buf)?;
         Ok(f64::from_be_bytes(buf))
+    }
+
+    fn read_uuid(&mut self) -> std::io::Result<uuid::Uuid> {
+        let mut buf = [0u8; 16];
+        self.read_exact(&mut buf)?;
+        Ok(uuid::Uuid::from_bytes(buf))
     }
 }
 

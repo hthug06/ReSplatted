@@ -19,7 +19,7 @@ async fn main() -> Result<(), Error> {
     // First of all init log
     // Start log
     TermLogger::init(
-        LevelFilter::Debug, // Use LevelFilter::Debug for debugging (LOL)
+        LevelFilter::Info, // Use LevelFilter::Debug for debugging (LOL)
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -46,11 +46,13 @@ async fn main() -> Result<(), Error> {
         .await?;
 
     // fetch the status from the server + the protocol version
-    let raw_protocol_version = client.fetch_and_display_status(&target).await?.unwrap();
+    // let raw_protocol_version = ;
     let protocol_version = if args.protocol != -1 {
         ProtocolVersion::from_protocol_version(args.protocol)
     } else {
-        ProtocolVersion::from_protocol_version(raw_protocol_version)
+        ProtocolVersion::from_protocol_version(
+            client.fetch_and_display_status(&target).await?.unwrap(),
+        )
     };
 
     if !args.status {

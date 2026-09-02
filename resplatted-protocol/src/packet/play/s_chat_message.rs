@@ -13,7 +13,7 @@ impl PacketWrite for ChatMessagePacket {
     fn id(ctx: &ConnectionContext) -> i32 {
         match ctx.version {
             ProtocolVersion::V1_21_1 => 0x05,
-            ProtocolVersion::V26_1 => 0x09,
+            ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => 0x09,
         }
     }
 

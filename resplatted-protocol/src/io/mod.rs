@@ -10,6 +10,7 @@ mod write_primitive;
 pub enum ProtocolVersion {
     V1_21_1 = 767,
     V26_1 = 775,
+    V26_2 = 776,
 }
 
 impl ProtocolVersion {
@@ -17,6 +18,7 @@ impl ProtocolVersion {
         match version {
             767 => ProtocolVersion::V1_21_1,
             775 => ProtocolVersion::V26_1,
+            776 => ProtocolVersion::V26_2,
             _ => unimplemented!("Protocol version {} is not supported", version),
         }
     }

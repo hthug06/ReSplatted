@@ -1,5 +1,4 @@
 use super::PacketWrite;
-use crate::io::ProtocolVersion::V1_21_1;
 use crate::io::write::MinecraftWriteExt;
 use crate::io::{ConnectionContext, ProtocolVersion};
 

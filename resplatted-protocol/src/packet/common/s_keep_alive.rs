@@ -12,7 +12,7 @@ impl PacketWrite for SKeepAlivePacket {
             ProtocolState::Configuration => 0x04,
             ProtocolState::Play => match ctx.version {
                 ProtocolVersion::V1_21_1 => 0x26,
-                ProtocolVersion::V26_1 => 0x1C,
+                ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => 0x1C,
             },
             _ => unreachable!(
                 "Invalid State for serverbound keep alive packet: {:?}",

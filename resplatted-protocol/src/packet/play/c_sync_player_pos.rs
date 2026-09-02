@@ -21,7 +21,7 @@ impl PacketRead for SyncPlayerPos {
     fn id(ctx: &ConnectionContext) -> i32 {
         match ctx.version {
             ProtocolVersion::V1_21_1 => 0x40,
-            ProtocolVersion::V26_1 => 0x48,
+            ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => 0x48,
         }
     }
 
@@ -51,7 +51,7 @@ impl PacketRead for SyncPlayerPos {
         let pitch = cursor.read_f32()?;
         let teleport_flag = match ctx.version {
             ProtocolVersion::V1_21_1 => cursor.read_var_int()?,
-            ProtocolVersion::V26_1 => cursor.read_i32()?,
+            ProtocolVersion::V26_1 | ProtocolVersion::V26_2 => cursor.read_i32()?,
         };
 
         // 1.21.1, last
