@@ -4,7 +4,7 @@ use crate::packet::PacketRead;
 use std::io::Cursor;
 
 #[derive(Debug)]
-pub struct SyncPlayerPos {
+pub struct SyncPlayerPosPacket {
     pub teleport_id: i32, // VarInt
     pub x: f64,
     pub y: f64,
@@ -17,7 +17,7 @@ pub struct SyncPlayerPos {
     pub teleport_flag: i32, // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Teleport_Flags
 }
 
-impl PacketRead for SyncPlayerPos {
+impl PacketRead for SyncPlayerPosPacket {
     fn id(ctx: &ConnectionContext) -> i32 {
         match ctx.version {
             ProtocolVersion::V1_21_1 => 0x40,

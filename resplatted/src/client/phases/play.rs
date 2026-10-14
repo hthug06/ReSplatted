@@ -2,19 +2,15 @@ use crate::client::core::MinecraftClient;
 use log::debug;
 use rand::RngExt;
 use rand::rngs::SmallRng;
-use resplatted_protocol::packet::common::c_disconnect::DisconnectPacket;
-use resplatted_protocol::packet::common::c_keep_alive::CKeepAlivePacket;
 use resplatted_protocol::packet::common::s_keep_alive::SKeepAlivePacket;
+use resplatted_protocol::packet::play::PlayPacket;
 use resplatted_protocol::packet::play::s_chat_message::ChatMessagePacket;
 use resplatted_protocol::packet::play::s_move_player_rot::MovePlayerRotPacket;
-use resplatted_protocol::packet::{
-    PacketRead,
-    play::{
-        c_sync_player_pos::SyncPlayerPos, s_accept_teleportation::AcceptTeleportationPacket,
-        s_move_player_pos_rot::MovePlayerPosRotPacket,
-    },
+use resplatted_protocol::packet::play::{
+    s_accept_teleportation::AcceptTeleportationPacket,
+    s_move_player_pos_rot::MovePlayerPosRotPacket,
 };
-use std::io::{Cursor, Error, ErrorKind};
+use std::io::{Error, ErrorKind};
 use std::sync::Arc;
 
 impl MinecraftClient {
@@ -25,13 +21,9 @@ impl MinecraftClient {
             // read the raw packet
             let raw_packet = self.reader.read_packet().await?;
 
-            // Match the packet id to know what packet we need to handle
-            match raw_packet.id {
-                id if id == CKeepAlivePacket::id(&self.context) => {
-                    let packet = CKeepAlivePacket::read(
-                        &mut Cursor::new(&raw_packet.payload),
-                        &self.context,
-                    )?;
+            // Match the packet to know what packet we need to handle
+            match PlayPacket::parse(&raw_packet, &self.context)? {
+                PlayPacket::KeepAlive(packet) => {
                     debug!(
                         "Received Keep Alive packet with id: {}. Sending Keep Alive packet with the same id",
                         packet.id
@@ -40,20 +32,13 @@ impl MinecraftClient {
                         .write_and_send_packet(&SKeepAlivePacket { id: packet.id }, &self.context)
                         .await?;
                 }
-                // Disconnect packet
-                id if id == DisconnectPacket::id(&self.context) => {
-                    let packet = DisconnectPacket::read(
-                        &mut Cursor::new(&raw_packet.payload),
-                        &self.context,
-                    )?;
+                PlayPacket::Disconnect(packet) => {
                     return Err(Error::new(
                         ErrorKind::ConnectionAborted,
                         format!("Disconnected by server in play phase: {}", packet.reason),
                     ));
                 }
-                id if id == SyncPlayerPos::id(&self.context) => {
-                    let packet =
-                        SyncPlayerPos::read(&mut Cursor::new(&raw_packet.payload), &self.context)?;
+                PlayPacket::SyncPlayerPos(packet) => {
                     debug!(
                         "Received Sync Player Pos packet with teleport id: {}. Sending Accept Teleportation packet",
                         packet.teleport_id
@@ -82,9 +67,10 @@ impl MinecraftClient {
                         )
                         .await?;
                 }
+
                 // The time update packet.
                 // This packet repeat every second, so we can use it to spam the chat lol and rotate the head to not get kicked
-                0x71 => {
+                PlayPacket::SetTime(_) => {
                     if let Some(message) = &message {
                         self.writer
                             .write_and_send_packet(
@@ -96,35 +82,21 @@ impl MinecraftClient {
                             .await?;
                     }
 
-                    // TODO bot are kick for invalid movement
                     let mut rng: SmallRng = rand::make_rng();
                     self.writer
                         .write_and_send_packet(
                             &MovePlayerRotPacket {
-                                yaw: rng.random_range(-179.0..=179.0),
-                                pitch: rng.random_range(-89.0..=89.0),
+                                yaw: rng.random_range(-10.0..=10.0),
+                                pitch: rng.random_range(-10.0..=10.0),
                                 flags: 0x01,
                             },
                             &self.context,
                         )
                         .await?;
                 }
-
                 // Error on the network or unimplemented packet
-                _ => {
-                    // If we want, we can stop the program here on an unimplemented packet.
-                    // But right now, we just want to skip it so just a warn in the console is okay
-                    /*return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        format!(
-                            "Packet ID unknown in the play phase: 0x{:02X}",
-                            raw_packet.id
-                        ),
-                    ));*/
-                    debug!(
-                        "Packet ID unknown in the play phase: 0x{:02X}",
-                        raw_packet.id
-                    );
+                PlayPacket::Unknown(id) => {
+                    debug!("Packet ID unknown in the play phase: 0x{:02X}", id);
                 }
             }
         }

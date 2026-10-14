@@ -1,13 +1,13 @@
-use std::io::{Cursor, Read};
-use crate::io::{ConnectionContext, ProtocolVersion};
 use crate::io::read::MinecraftReadExt;
+use crate::io::{ConnectionContext, ProtocolVersion};
 use crate::packet::PacketRead;
 use crate::types::clock::Clock;
+use std::io::Cursor;
 
 #[derive(Debug)]
 pub struct SetTimePacket {
     pub world_age: i64,
-    pub clocks: Vec<Clock>
+    pub clocks: Vec<Clock>,
 }
 
 impl PacketRead for SetTimePacket {
@@ -19,7 +19,7 @@ impl PacketRead for SetTimePacket {
         }
     }
 
-    fn read(cursor: &mut Cursor<&[u8]>, ctx: &ConnectionContext) -> std::io::Result<Self> {
+    fn read(cursor: &mut Cursor<&[u8]>, _ctx: &ConnectionContext) -> std::io::Result<Self> {
         let world_age: i64 = cursor.read_i64()?;
 
         let clocks_size: i32 = cursor.read_var_int()?;
@@ -28,9 +28,6 @@ impl PacketRead for SetTimePacket {
             clocks.push(Clock::read(cursor)?);
         }
 
-        Ok(SetTimePacket {
-            world_age,
-            clocks
-        })
+        Ok(SetTimePacket { world_age, clocks })
     }
 }

@@ -5,6 +5,8 @@ use std::io::{Error, ErrorKind, Read};
 pub trait MinecraftReadExt {
     /// Read a Minecraft VarInt
     fn read_var_int(&mut self) -> std::io::Result<i32>;
+    /// Read a Minecraft VarLong
+    fn read_var_long(&mut self) -> std::io::Result<i64>;
     /// Read an utf-8 String
     fn read_string(&mut self) -> std::io::Result<String>;
     fn read_bool(&mut self) -> std::io::Result<bool>;
@@ -36,7 +38,7 @@ impl<R: Read> MinecraftReadExt for R {
     fn read_var_int(&mut self) -> std::io::Result<i32> {
         let mut value: i32 = 0;
         let mut position: i32 = 0;
-        let mut buf = [0u8; 1]; // Read bytes by bytes
+        let mut buf: [u8; 1] = [0u8; 1]; // Read bytes by bytes
 
         loop {
             self.read_exact(&mut buf)?;
@@ -51,6 +53,33 @@ impl<R: Read> MinecraftReadExt for R {
             position += 7;
             if position >= 32 {
                 return Err(Error::new(ErrorKind::InvalidData, "VarInt is too big"));
+            }
+        }
+
+        Ok(value)
+    }
+
+    /// Read a Minecraft VarLong
+    /// Copied from https://minecraft.wiki/w/Java_Edition_protocol/Packets#VarInt_and_VarLong So it's should be safe.
+    /// BUT just in case, we created tests
+    fn read_var_long(&mut self) -> std::io::Result<i64> {
+        let mut value: i64 = 0;
+        let mut position: i32 = 0;
+        let mut buf: [u8; 1] = [0u8; 1]; // Read bytes by bytes
+
+        loop {
+            self.read_exact(&mut buf)?;
+            let current_byte = buf[0];
+
+            value |= ((current_byte & 0x7F) as i64) << position;
+
+            if (current_byte & 0x80) == 0 {
+                break;
+            }
+
+            position += 7;
+            if position >= 64 {
+                return Err(Error::new(ErrorKind::InvalidData, "VarLong is too big"));
             }
         }
 
@@ -160,6 +189,38 @@ mod tests {
         let result = cursor.read_var_int();
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().to_string(), "VarInt is too big");
+    }
+
+    // VarLong Tests
+
+    /// Test if a VarLong can be 0
+    #[test]
+    fn test_read_var_long_zero() {
+        let data = vec![0x00];
+        let mut cursor = Cursor::new(data);
+        assert_eq!(cursor.read_var_long().unwrap(), 0);
+    }
+
+    /// Test negative VarLong
+    #[test]
+    fn test_read_var_long_negative() {
+        let data = vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01];
+        let mut cursor = Cursor::new(data);
+        assert_eq!(cursor.read_var_long().unwrap(), -1);
+    }
+
+    /// Test if we get the right error when the VarInt is too big
+    #[test]
+    fn test_read_var_long_too_big() {
+        // 6 bytes here (max is 5)
+        let data = vec![
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+        ];
+        let mut cursor = Cursor::new(data);
+
+        let result = cursor.read_var_long();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "VarLong is too big");
     }
 
     // String tests
