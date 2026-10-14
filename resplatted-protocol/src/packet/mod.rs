@@ -51,3 +51,33 @@ pub fn encode_packet<P: PacketWrite>(
 
     Ok(())
 }
+
+#[macro_export]
+macro_rules! define_phase_packets {
+    (
+        $EnumName:ident {
+            $( $Variant:ident($PacketType:ty) ),* $(,)?
+        }
+    ) => {
+        pub enum $EnumName {
+            $( $Variant($PacketType), )*
+            Unknown(i32),
+        }
+
+        impl $EnumName {
+            pub fn parse(raw: &RawPacket, ctx: &ConnectionContext) -> std::io::Result<Self> {
+                let mut cursor = std::io::Cursor::new(raw.payload.as_slice());
+                let id = raw.id;
+
+                // Ensure the compiler checks sequentially using the packet's own id(ctx)
+                $(
+                    if id == <$PacketType>::id(ctx) {
+                        return Ok(Self::$Variant(<$PacketType>::read(&mut cursor, ctx)?));
+                    }
+                )*
+
+                Ok(Self::Unknown(id))
+            }
+        }
+    };
+}
